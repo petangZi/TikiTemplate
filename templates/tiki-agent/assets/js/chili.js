@@ -112,7 +112,13 @@
   }
   vec4 renderScene(vec2 uv, vec2 res){
     float A = (res.x / res.y) * 0.60;
-    vec2 cen = mix(vec2(0.700, 0.520), vec2(0.5, 0.5), uStyle);
+    float visH = 0.824;
+    float visW = visH * A;
+    float sc = min(mix(0.532, 0.512, uStyle), 0.62 * visW);
+    float cenWide = mix(0.56, 0.70, smoothstep(0.9, 1.9, A));
+    float cenX = mix(0.60, cenWide, smoothstep(0.85, 1.15, A));
+    cenX = mix(cenX, 0.5, uStyle);
+    vec2 cen = vec2(cenX, 0.477);
     vec2 sp = (uv - cen) * vec2(A, 1.0);
 
     vec3 ro = vec3(0.0, 0.02, 4.2);
@@ -138,7 +144,6 @@
     float ph = t * run;
     float bob = sin(t * 15.0) * 0.035 * (0.7 + uAct);
     vec3 pos = vec3(0.0, bob, 0.0);
-    float sc = mix(0.58, 0.52, uStyle);
     float lean = 0.16 + 0.04 * uAct;
     float best = 0.0;
 

@@ -297,7 +297,24 @@ p { margin: 0; }
   min-height: min(calc(100svh - 64px), 940px);
   isolation: isolate;
 }
-.hero-canvas { position: absolute; inset: 0; width: 100%; height: 100%; z-index: 0; }
+.hero-stage { position: absolute; inset: 0; z-index: 0; }
+.hero-canvas { position: absolute; inset: 0; width: 100%; height: 100%; }
+
+/* ---------- non-webgl fallback ---------- */
+.hero-fallback { display: none; position: absolute; right: 2%; top: 50%; transform: translateY(-50%); width: min(44vw, 540px); aspect-ratio: 440 / 360; pointer-events: none; }
+.hero.no-webgl .hero-fallback { display: block; }
+.hero.no-webgl .hero-canvas { display: none; }
+.hero.no-webgl .hero-stage { background: radial-gradient(52% 52% at 62% 54%, rgba(255, 47, 47, 0.14), transparent 72%); }
+.hero-fallback img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: contain; }
+.fb-ghost { opacity: 0.16; filter: blur(1px); }
+.fb-ghost.g1 { transform: translateX(-10%); }
+.fb-ghost.g2 { transform: translateX(-19%); opacity: 0.07; }
+.fb-run { animation: fb-bob 1.15s ease-in-out infinite alternate; }
+@keyframes fb-bob { to { transform: translate(-1%, -2%); } }
+@media (max-width: 1100px) {
+  .hero-fallback { width: 40vw; right: -4%; opacity: 0.6; }
+}
+@media (prefers-reduced-motion: reduce) { .fb-run { animation: none; } }
 .hero-scrim {
   position: absolute; inset: 0; z-index: 1; pointer-events: none;
   background:
@@ -557,14 +574,33 @@ p { margin: 0; }
   .hero-hud { display: none; }
 }
 @media (max-width: 900px) {
-  .hero { min-height: auto; padding-bottom: 40px; }
-  .hero-scrim {
-    background:
-      linear-gradient(180deg, rgba(6,6,7,.55) 0%, rgba(6,6,7,.2) 22%, rgba(6,6,7,.86) 52%, rgba(6,6,7,.98) 72%),
-      radial-gradient(70% 50% at 70% 20%, transparent, rgba(6,6,7,.6));
+  .hero {
+    min-height: auto;
+    flex-direction: column;
+    align-items: stretch;
+    padding-top: 24px;
+    padding-bottom: 44px;
   }
+  .hero-body { order: 1; }
+  .hero-stage {
+    position: relative;
+    order: 2;
+    inset: auto;
+    width: 100%;
+    aspect-ratio: 5 / 4;
+    margin-top: 22px;
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    background: #060607;
+    overflow: hidden;
+  }
+  .hero-scrim { display: none; }
+  .hero-fallback { left: 5%; right: 5%; top: 4%; bottom: 4%; width: auto; transform: none; }
+  .hero.no-webgl .hero-stage { background: radial-gradient(60% 60% at 50% 50%, rgba(255, 47, 47, 0.16), transparent 74%); }
   .hero-copy { max-width: 100%; }
-  .hero h1 { font-size: clamp(38px, 9vw, 62px); }
+  .hero h1 { font-size: clamp(36px, 9vw, 58px); }
+  .term-card { margin-top: 22px; }
+  .hero-meta { margin-top: 18px; }
   .stats { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .stat:nth-child(2n) { border-right: 0; }
   .stat:nth-child(-n + 2) { border-bottom: 1px solid var(--line); }
@@ -578,24 +614,6 @@ p { margin: 0; }
   .term-card { margin-top: 24px; }
   .hero-meta { gap: 6px 18px; }
 }
-
-/* ---------- non-webgl fallback ---------- */
-.hero-fallback { display: none; position: absolute; right: 1%; top: 50%; transform: translateY(-50%); width: min(46vw, 580px); aspect-ratio: 440 / 360; z-index: 1; pointer-events: none; }
-.hero.no-webgl .hero-fallback { display: block; }
-.hero.no-webgl .hero-canvas { display: none; }
-.hero-fallback img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: contain; }
-.fb-ghost { opacity: 0.16; filter: blur(1px); }
-.fb-ghost.g1 { transform: translateX(-10%); }
-.fb-ghost.g2 { transform: translateX(-19%); opacity: 0.07; }
-.fb-run { animation: fb-bob 1.15s ease-in-out infinite alternate; }
-@keyframes fb-bob { to { transform: translate(-1%, -2%); } }
-@media (max-width: 1100px) {
-  .hero-fallback { width: 42vw; right: -6%; opacity: 0.55; }
-}
-@media (max-width: 900px) {
-  .hero-fallback { width: 74vw; right: -14%; top: 30%; opacity: 0.72; }
-}
-@media (prefers-reduced-motion: reduce) { .fb-run { animation: none; } }
 
 /* ============================================================
    tiki agent — console
@@ -628,13 +646,48 @@ p { margin: 0; }
 .topbar .brand .mark { width: 22px; height: 22px; }
 
 .crumbs {
-  display: flex; align-items: center; gap: 8px;
-  font-size: 11.5px; color: var(--muted);
-  padding-left: 16px; border-left: 1px solid var(--line);
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  min-width: 0;
+  max-width: min(44vw, 560px);
+  margin-left: 4px;
+  padding: 5px 10px 5px 9px;
+  border: 1px solid var(--line);
+  border-radius: 5px;
+  background: rgba(255, 255, 255, 0.02);
+  font-size: 11px;
+  line-height: 1.2;
+  color: var(--muted);
 }
-.crumbs b { color: var(--ink-2); font-weight: 500; }
-.crumbs .sep { color: var(--faint); }
-.crumbs .modified { color: var(--warn); font-size: 10px; }
+.crumbs:hover { border-color: var(--line-2); }
+.crumb-ico { width: 13px; height: 13px; flex: none; color: var(--faint); }
+.crumbs .crumb { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.crumbs .crumb.root { flex: 0 0 auto; color: var(--faint); }
+.crumbs .crumb.strong { color: var(--ink); font-weight: 500; }
+.crumbs .crumb.sid { color: var(--muted); flex: 0 1 auto; }
+.crumbs .sep { flex: none; color: #35353e; user-select: none; }
+.crumbs .dirty {
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  margin-left: 2px;
+  padding: 1px 7px 1px 6px;
+  border: 1px solid rgba(255, 204, 102, 0.22);
+  border-radius: 99px;
+  background: rgba(255, 204, 102, 0.06);
+  color: var(--warn);
+  font-size: 9.5px;
+  letter-spacing: 0.04em;
+  white-space: nowrap;
+}
+.crumbs .dirty::before {
+  content: "";
+  width: 4px; height: 4px; border-radius: 50%;
+  background: var(--warn);
+  box-shadow: 0 0 6px rgba(255, 204, 102, 0.75);
+}
 
 .topbar .grow { flex: 1; }
 
@@ -685,10 +738,11 @@ p { margin: 0; }
 .rail-head button:hover { color: var(--red); }
 
 .session {
-  display: flex; align-items: center; gap: 8px;
+  display: flex; align-items: center; gap: 8px; min-width: 0;
   padding: 7px 8px; border-radius: 4px; font-size: 11.5px; color: var(--ink-2);
   cursor: pointer; border-left: 2px solid transparent;
 }
+.session .nm { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .session:hover { background: rgba(255, 255, 255, 0.03); }
 .session.active { background: rgba(255, 47, 47, 0.07); border-left-color: var(--red); color: var(--ink); }
 .session .dot { width: 5px; height: 5px; background: var(--faint); box-shadow: none; animation: none; }
@@ -703,7 +757,8 @@ p { margin: 0; }
 }
 .tree-row:hover { background: rgba(255, 255, 255, 0.035); }
 .tree-row.active { background: rgba(255, 47, 47, 0.09); color: var(--ink); }
-.tree-row .fav { width: 12px; text-align: center; color: var(--faint); }
+.tree-row .fav { width: 12px; text-align: center; color: var(--faint); flex: none; }
+.tree-row .nm { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .tree-row.folder { color: var(--muted); font-size: 11px; letter-spacing: 0.02em; }
 .tree-row .mod { margin-left: auto; width: 5px; height: 5px; border-radius: 50%; background: var(--warn); }
 .tree-row .add { margin-left: auto; width: 5px; height: 5px; border-radius: 50%; background: var(--ok); }
@@ -723,7 +778,10 @@ p { margin: 0; }
   border-bottom: 1px solid var(--line);
   background: rgba(8, 8, 10, 0.6);
 }
-.thread-head h1 { font-size: 13px; font-family: var(--mono); font-weight: 500; letter-spacing: 0; }
+.thread-head h1 {
+  font-size: 13px; font-family: var(--mono); font-weight: 500; letter-spacing: 0;
+  min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
 .thread-head .sev {
   font-size: 9.5px; letter-spacing: 0.12em; text-transform: uppercase;
   color: var(--red); border: 1px solid rgba(255, 47, 47, 0.35); background: rgba(255, 47, 47, 0.08);
@@ -800,7 +858,7 @@ p { margin: 0; }
 .tool .nm { color: var(--ink); font-weight: 500; }
 .tool .ar {
   color: var(--muted); font-size: 10.8px;
-  overflow: hidden; text-overflow: ellipsis; white-space: nowrap; flex: 1;
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap; flex: 1; min-width: 0;
 }
 .tool .st {
   font-size: 9.5px; letter-spacing: 0.06em; padding: 2px 6px; border-radius: 3px;
@@ -1046,7 +1104,9 @@ kbd {
     display: flex; position: fixed; right: 0; top: 56px; bottom: 26px; width: min(340px, 92vw); z-index: 30;
     box-shadow: -30px 0 60px -30px rgba(0, 0, 0, 0.9);
   }
-  .crumbs { display: none; }
+  .crumbs { max-width: 34vw; padding: 4px 8px; font-size: 10.5px; }
+  .crumbs .root, .crumbs .sep, .crumbs .sid, .crumbs .dirty { display: none; }
+  .crumbs .crumb.strong { flex: 1 1 auto; }
   .stream { padding: 8px 14px 20px; }
   .composer { padding: 10px 14px 12px; }
   .thread-head { padding: 10px 14px; }
@@ -1071,6 +1131,21 @@ kbd {
   .thread-head h1 { font-size: 12px; }
   .tool .ar { display: none; }
   .statusbar { gap: 10px; }
+}
+
+@media (max-width: 560px) {
+  .topbar { gap: 7px; padding: 0 9px; }
+  .topbar .brand span { display: none; }
+  .topbar .brand { gap: 0; }
+  .crumbs { max-width: 44vw; }
+  .chip { height: 32px; padding: 0 9px; }
+  .icon-btn { width: 34px; height: 34px; }
+  .thread-head .tool-mini { display: none; }
+  .thread-head { gap: 8px; }
+  .composer textarea { font-size: 16px; line-height: 1.5; }
+  .composer-bar { padding: 6px 8px 8px; }
+  .pchip { height: 26px; }
+  .send { height: 30px; }
 }
 
 
@@ -1227,11 +1302,13 @@ body.on-console { overflow: hidden; height: 100dvh; }
 
 <main>
   <section class="hero" id="top">
-    <canvas class="hero-canvas" id="hero-ascii" aria-hidden="true"></canvas>
-    <div class="hero-fallback" aria-hidden="true">
-      <svg class="fb-ghost g2 art" aria-hidden="true"><use href="#tiki-mascot"/></svg>
-      <svg class="fb-ghost g1 art" aria-hidden="true"><use href="#tiki-mascot"/></svg>
-      <svg class="fb-run art" aria-hidden="true"><use href="#tiki-mascot"/></svg>
+    <div class="hero-stage">
+      <canvas class="hero-canvas" id="hero-ascii" aria-hidden="true"></canvas>
+      <div class="hero-fallback" aria-hidden="true">
+        <svg class="fb-ghost g2 art" aria-hidden="true"><use href="#tiki-mascot"/></svg>
+        <svg class="fb-ghost g1 art" aria-hidden="true"><use href="#tiki-mascot"/></svg>
+        <svg class="fb-run art" aria-hidden="true"><use href="#tiki-mascot"/></svg>
+      </div>
     </div>
     <div class="hero-scrim"></div>
 
@@ -1458,14 +1535,15 @@ body.on-console { overflow: hidden; height: 100dvh; }
     <svg class="mark" aria-hidden="true"><use href="#tiki-mark"/></svg>
     <span>tiki<b>_</b>agent</span>
   </a>
-  <div class="crumbs">
-    <span>workspace</span>
+  <nav class="crumbs" aria-label="workspace path" title="workspace / acme-core / tk-8842">
+    <svg class="crumb-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round" aria-hidden="true"><path d="M3 7.5A1.5 1.5 0 0 1 4.5 6h4l1.7 2h9.3A1.5 1.5 0 0 1 21 9.5v8A1.5 1.5 0 0 1 19.5 19h-15A1.5 1.5 0 0 1 3 17.5z"/></svg>
+    <span class="crumb root">workspace</span>
     <span class="sep">/</span>
-    <b>acme-core</b>
+    <span class="crumb strong">acme-core</span>
     <span class="sep">/</span>
-    <span>tk-8842</span>
-    <span class="modified">● 3 files changed</span>
-  </div>
+    <span class="crumb sid">tk-8842</span>
+    <span class="dirty">3 files</span>
+  </nav>
   <div class="grow"></div>
 
   <button class="chip" id="modelChip" title="switch model">
@@ -1488,27 +1566,27 @@ body.on-console { overflow: hidden; height: 100dvh; }
     <div class="rail-block">
       <div class="rail-head"><span>sessions</span><button title="new session">+</button></div>
       <div id="sessionList">
-        <div class="session active"><span class="dot"></span> auth bypass → rce <span class="meta">now</span></div>
-        <div class="session"><span class="dot"></span> api surface review <span class="meta">2h</span></div>
-        <div class="session"><span class="dot"></span> subdomain sweep <span class="meta">1d</span></div>
-        <div class="session"><span class="dot"></span> s3 bucket audit <span class="meta">3d</span></div>
+        <div class="session active"><span class="dot"></span><span class="nm">auth bypass → rce</span><span class="meta">now</span></div>
+        <div class="session"><span class="dot"></span><span class="nm">api surface review</span><span class="meta">2h</span></div>
+        <div class="session"><span class="dot"></span><span class="nm">subdomain sweep</span><span class="meta">1d</span></div>
+        <div class="session"><span class="dot"></span><span class="nm">s3 bucket audit</span><span class="meta">3d</span></div>
       </div>
     </div>
 
     <div class="rail-block scroll">
       <div class="rail-head"><span>workspace</span><button title="collapse">–</button></div>
       <div class="tree">
-        <div class="tree-row folder"><span class="fav">▾</span> engagements/acme-core</div>
-        <div class="tree-row folder"><span class="fav">▾</span> &nbsp;recon</div>
-        <div class="tree-row"><span class="fav">·</span> &nbsp;&nbsp;hosts.txt</div>
-        <div class="tree-row"><span class="fav">·</span> &nbsp;&nbsp;nmap.xml</div>
-        <div class="tree-row folder"><span class="fav">▾</span> &nbsp;src</div>
-        <div class="tree-row"><span class="fav">·</span> &nbsp;&nbsp;auth/session.ts<span class="mod"></span></div>
-        <div class="tree-row active"><span class="fav">·</span> &nbsp;&nbsp;api/v2/user.ts<span class="mod"></span></div>
-        <div class="tree-row"><span class="fav">·</span> &nbsp;&nbsp;middleware/cors.ts</div>
-        <div class="tree-row folder"><span class="fav">▸</span> &nbsp;reports</div>
-        <div class="tree-row"><span class="fav">·</span> &nbsp;&nbsp;scope.yaml</div>
-        <div class="tree-row"><span class="fav">·</span> &nbsp;&nbsp;tiki.toml<span class="add"></span></div>
+        <div class="tree-row folder"><span class="fav">▾</span><span class="nm">engagements/acme-core</span></div>
+        <div class="tree-row folder"><span class="fav">▾</span><span class="nm">recon</span></div>
+        <div class="tree-row"><span class="fav">·</span><span class="nm">hosts.txt</span></div>
+        <div class="tree-row"><span class="fav">·</span><span class="nm">nmap.xml</span></div>
+        <div class="tree-row folder"><span class="fav">▾</span><span class="nm">src</span></div>
+        <div class="tree-row"><span class="fav">·</span><span class="nm">auth/session.ts</span><span class="mod"></span></div>
+        <div class="tree-row active"><span class="fav">·</span><span class="nm">api/v2/user.ts</span><span class="mod"></span></div>
+        <div class="tree-row"><span class="fav">·</span><span class="nm">middleware/cors.ts</span></div>
+        <div class="tree-row folder"><span class="fav">▸</span><span class="nm">reports</span></div>
+        <div class="tree-row"><span class="fav">·</span><span class="nm">scope.yaml</span></div>
+        <div class="tree-row"><span class="fav">·</span><span class="nm">tiki.toml</span><span class="add"></span></div>
       </div>
     </div>
 
@@ -1772,7 +1850,8 @@ body.on-console { overflow: hidden; height: 100dvh; }
       canvas.style.background =
         "radial-gradient(42% 46% at 62% 54%, rgba(255,47,47,.22), rgba(120,10,10,.10) 45%, transparent 72%)";
       canvas.classList.add("ascii-off");
-      if (canvas.parentElement) canvas.parentElement.classList.add("no-webgl");
+      const host = canvas.closest(".hero, .mini") || canvas.parentElement;
+      if (host) host.classList.add("no-webgl");
       return { ok: false, setActivity() {}, dispose() {} };
     }
 
@@ -2048,7 +2127,13 @@ body.on-console { overflow: hidden; height: 100dvh; }
   }
   vec4 renderScene(vec2 uv, vec2 res){
     float A = (res.x / res.y) * 0.60;
-    vec2 cen = mix(vec2(0.700, 0.520), vec2(0.5, 0.5), uStyle);
+    float visH = 0.824;
+    float visW = visH * A;
+    float sc = min(mix(0.532, 0.512, uStyle), 0.62 * visW);
+    float cenWide = mix(0.56, 0.70, smoothstep(0.9, 1.9, A));
+    float cenX = mix(0.60, cenWide, smoothstep(0.85, 1.15, A));
+    cenX = mix(cenX, 0.5, uStyle);
+    vec2 cen = vec2(cenX, 0.477);
     vec2 sp = (uv - cen) * vec2(A, 1.0);
 
     vec3 ro = vec3(0.0, 0.02, 4.2);
@@ -2074,7 +2159,6 @@ body.on-console { overflow: hidden; height: 100dvh; }
     float ph = t * run;
     float bob = sin(t * 15.0) * 0.035 * (0.7 + uAct);
     vec3 pos = vec3(0.0, bob, 0.0);
-    float sc = mix(0.58, 0.52, uStyle);
     float lean = 0.16 + 0.04 * uAct;
     float best = 0.0;
 

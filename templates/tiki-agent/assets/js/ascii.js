@@ -139,7 +139,8 @@
       canvas.style.background =
         "radial-gradient(42% 46% at 62% 54%, rgba(255,47,47,.22), rgba(120,10,10,.10) 45%, transparent 72%)";
       canvas.classList.add("ascii-off");
-      if (canvas.parentElement) canvas.parentElement.classList.add("no-webgl");
+      const host = canvas.closest(".hero, .mini") || canvas.parentElement;
+      if (host) host.classList.add("no-webgl");
       return { ok: false, setActivity() {}, dispose() {} };
     }
 

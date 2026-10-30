@@ -29,13 +29,48 @@
 .topbar .brand .mark { width: 22px; height: 22px; }
 
 .crumbs {
-  display: flex; align-items: center; gap: 8px;
-  font-size: 11.5px; color: var(--muted);
-  padding-left: 16px; border-left: 1px solid var(--line);
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  min-width: 0;
+  max-width: min(44vw, 560px);
+  margin-left: 4px;
+  padding: 5px 10px 5px 9px;
+  border: 1px solid var(--line);
+  border-radius: 5px;
+  background: rgba(255, 255, 255, 0.02);
+  font-size: 11px;
+  line-height: 1.2;
+  color: var(--muted);
 }
-.crumbs b { color: var(--ink-2); font-weight: 500; }
-.crumbs .sep { color: var(--faint); }
-.crumbs .modified { color: var(--warn); font-size: 10px; }
+.crumbs:hover { border-color: var(--line-2); }
+.crumb-ico { width: 13px; height: 13px; flex: none; color: var(--faint); }
+.crumbs .crumb { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.crumbs .crumb.root { flex: 0 0 auto; color: var(--faint); }
+.crumbs .crumb.strong { color: var(--ink); font-weight: 500; }
+.crumbs .crumb.sid { color: var(--muted); flex: 0 1 auto; }
+.crumbs .sep { flex: none; color: #35353e; user-select: none; }
+.crumbs .dirty {
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  margin-left: 2px;
+  padding: 1px 7px 1px 6px;
+  border: 1px solid rgba(255, 204, 102, 0.22);
+  border-radius: 99px;
+  background: rgba(255, 204, 102, 0.06);
+  color: var(--warn);
+  font-size: 9.5px;
+  letter-spacing: 0.04em;
+  white-space: nowrap;
+}
+.crumbs .dirty::before {
+  content: "";
+  width: 4px; height: 4px; border-radius: 50%;
+  background: var(--warn);
+  box-shadow: 0 0 6px rgba(255, 204, 102, 0.75);
+}
 
 .topbar .grow { flex: 1; }
 
@@ -86,10 +121,11 @@
 .rail-head button:hover { color: var(--red); }
 
 .session {
-  display: flex; align-items: center; gap: 8px;
+  display: flex; align-items: center; gap: 8px; min-width: 0;
   padding: 7px 8px; border-radius: 4px; font-size: 11.5px; color: var(--ink-2);
   cursor: pointer; border-left: 2px solid transparent;
 }
+.session .nm { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .session:hover { background: rgba(255, 255, 255, 0.03); }
 .session.active { background: rgba(255, 47, 47, 0.07); border-left-color: var(--red); color: var(--ink); }
 .session .dot { width: 5px; height: 5px; background: var(--faint); box-shadow: none; animation: none; }
@@ -104,7 +140,8 @@
 }
 .tree-row:hover { background: rgba(255, 255, 255, 0.035); }
 .tree-row.active { background: rgba(255, 47, 47, 0.09); color: var(--ink); }
-.tree-row .fav { width: 12px; text-align: center; color: var(--faint); }
+.tree-row .fav { width: 12px; text-align: center; color: var(--faint); flex: none; }
+.tree-row .nm { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .tree-row.folder { color: var(--muted); font-size: 11px; letter-spacing: 0.02em; }
 .tree-row .mod { margin-left: auto; width: 5px; height: 5px; border-radius: 50%; background: var(--warn); }
 .tree-row .add { margin-left: auto; width: 5px; height: 5px; border-radius: 50%; background: var(--ok); }
@@ -124,7 +161,10 @@
   border-bottom: 1px solid var(--line);
   background: rgba(8, 8, 10, 0.6);
 }
-.thread-head h1 { font-size: 13px; font-family: var(--mono); font-weight: 500; letter-spacing: 0; }
+.thread-head h1 {
+  font-size: 13px; font-family: var(--mono); font-weight: 500; letter-spacing: 0;
+  min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
 .thread-head .sev {
   font-size: 9.5px; letter-spacing: 0.12em; text-transform: uppercase;
   color: var(--red); border: 1px solid rgba(255, 47, 47, 0.35); background: rgba(255, 47, 47, 0.08);
@@ -201,7 +241,7 @@
 .tool .nm { color: var(--ink); font-weight: 500; }
 .tool .ar {
   color: var(--muted); font-size: 10.8px;
-  overflow: hidden; text-overflow: ellipsis; white-space: nowrap; flex: 1;
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap; flex: 1; min-width: 0;
 }
 .tool .st {
   font-size: 9.5px; letter-spacing: 0.06em; padding: 2px 6px; border-radius: 3px;
@@ -447,7 +487,9 @@ kbd {
     display: flex; position: fixed; right: 0; top: 56px; bottom: 26px; width: min(340px, 92vw); z-index: 30;
     box-shadow: -30px 0 60px -30px rgba(0, 0, 0, 0.9);
   }
-  .crumbs { display: none; }
+  .crumbs { max-width: 34vw; padding: 4px 8px; font-size: 10.5px; }
+  .crumbs .root, .crumbs .sep, .crumbs .sid, .crumbs .dirty { display: none; }
+  .crumbs .crumb.strong { flex: 1 1 auto; }
   .stream { padding: 8px 14px 20px; }
   .composer { padding: 10px 14px 12px; }
   .thread-head { padding: 10px 14px; }
@@ -472,4 +514,19 @@ kbd {
   .thread-head h1 { font-size: 12px; }
   .tool .ar { display: none; }
   .statusbar { gap: 10px; }
+}
+
+@media (max-width: 560px) {
+  .topbar { gap: 7px; padding: 0 9px; }
+  .topbar .brand span { display: none; }
+  .topbar .brand { gap: 0; }
+  .crumbs { max-width: 44vw; }
+  .chip { height: 32px; padding: 0 9px; }
+  .icon-btn { width: 34px; height: 34px; }
+  .thread-head .tool-mini { display: none; }
+  .thread-head { gap: 8px; }
+  .composer textarea { font-size: 16px; line-height: 1.5; }
+  .composer-bar { padding: 6px 8px 8px; }
+  .pchip { height: 26px; }
+  .send { height: 30px; }
 }
