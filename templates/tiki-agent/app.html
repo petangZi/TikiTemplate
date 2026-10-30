@@ -1,0 +1,198 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>tiki agent — console</title>
+<meta name="theme-color" content="#070708" />
+<link rel="icon" href="assets/svg/favicon.svg" type="image/svg+xml" />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet" />
+<link rel="stylesheet" href="assets/css/tiki.css" />
+<link rel="stylesheet" href="assets/css/app.css" />
+</head>
+<body class="app">
+
+<header class="topbar">
+  <a class="brand" href="index.html" title="back to landing">
+    <img class="mark" src="assets/svg/tiki-mark.svg" alt="" width="22" height="22" />
+    <span>tiki<b>_</b>agent</span>
+  </a>
+  <div class="crumbs">
+    <span>workspace</span>
+    <span class="sep">/</span>
+    <b>acme-core</b>
+    <span class="sep">/</span>
+    <span>tk-8842</span>
+    <span class="modified">● 3 files changed</span>
+  </div>
+  <div class="grow"></div>
+
+  <button class="chip" id="modelChip" title="switch model">
+    <span class="k">model</span> <b>tiki-v3 · flash</b>
+  </button>
+  <button class="chip" id="ctxChip" title="context used">
+    <span class="k">ctx</span> <b id="ctxVal">26%</b>
+  </button>
+  <button class="chip agent-pill" id="agentPill"><span class="dot"></span> <span id="agentPillText">running</span></button>
+  <button class="icon-btn" id="railBtn" title="workspace">
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 6h16M4 12h16M4 18h10"/></svg>
+  </button>
+  <button class="icon-btn" id="actBtn" title="activity">
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M3 12h4l2 6 3-14 2 8h7"/></svg>
+  </button>
+</header>
+
+<div class="shell">
+  <aside class="rail" id="rail">
+    <div class="rail-block">
+      <div class="rail-head"><span>sessions</span><button title="new session">+</button></div>
+      <div id="sessionList">
+        <div class="session active"><span class="dot"></span> auth bypass → rce <span class="meta">now</span></div>
+        <div class="session"><span class="dot"></span> api surface review <span class="meta">2h</span></div>
+        <div class="session"><span class="dot"></span> subdomain sweep <span class="meta">1d</span></div>
+        <div class="session"><span class="dot"></span> s3 bucket audit <span class="meta">3d</span></div>
+      </div>
+    </div>
+
+    <div class="rail-block scroll">
+      <div class="rail-head"><span>workspace</span><button title="collapse">–</button></div>
+      <div class="tree">
+        <div class="tree-row folder"><span class="fav">▾</span> engagements/acme-core</div>
+        <div class="tree-row folder"><span class="fav">▾</span> &nbsp;recon</div>
+        <div class="tree-row"><span class="fav">·</span> &nbsp;&nbsp;hosts.txt</div>
+        <div class="tree-row"><span class="fav">·</span> &nbsp;&nbsp;nmap.xml</div>
+        <div class="tree-row folder"><span class="fav">▾</span> &nbsp;src</div>
+        <div class="tree-row"><span class="fav">·</span> &nbsp;&nbsp;auth/session.ts<span class="mod"></span></div>
+        <div class="tree-row active"><span class="fav">·</span> &nbsp;&nbsp;api/v2/user.ts<span class="mod"></span></div>
+        <div class="tree-row"><span class="fav">·</span> &nbsp;&nbsp;middleware/cors.ts</div>
+        <div class="tree-row folder"><span class="fav">▸</span> &nbsp;reports</div>
+        <div class="tree-row"><span class="fav">·</span> &nbsp;&nbsp;scope.yaml</div>
+        <div class="tree-row"><span class="fav">·</span> &nbsp;&nbsp;tiki.toml<span class="add"></span></div>
+      </div>
+    </div>
+
+    <div class="rail-foot">
+      <img src="assets/svg/tiki-mark.svg" alt="" width="28" height="28" />
+      <div class="nm">tiki<span>flash runtime · v1.0</span></div>
+    </div>
+  </aside>
+
+  <section class="chat">
+    <div class="thread-head">
+      <h1>auth bypass → rce</h1>
+      <span class="sev">critical</span>
+      <span class="tool-mini">4 hosts · 2 authenticated</span>
+      <span class="grow"></span>
+      <button class="btn btn-quiet" id="stopBtn" style="height:26px;font-size:10.5px;border:1px solid #2a2a33;padding:0 9px">stop</button>
+      <button class="btn btn-quiet" id="exportBtn" style="height:26px;font-size:10.5px">export report</button>
+    </div>
+
+    <div class="stream" id="stream" aria-live="polite"></div>
+
+    <div class="composer">
+      <div class="composer-box">
+        <textarea id="input" rows="1" placeholder="ask tiki to recon, exploit, patch or explain — ⏎ to send"></textarea>
+        <div class="composer-bar">
+          <button class="pchip on" data-profile="deep">deep</button>
+          <button class="pchip" data-profile="recon">recon</button>
+          <button class="pchip" data-profile="exploit">exploit</button>
+          <button class="pchip" id="attachBtn">+ attach</button>
+          <span class="grow"></span>
+          <button class="send" id="sendBtn">
+            run
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
+          </button>
+        </div>
+      </div>
+      <div class="composer-hint">
+        <span><kbd>⏎</kbd> send · <kbd>⇧⏎</kbd> newline · <kbd>⌘K</kbd> palette · <kbd>/</kbd> focus</span>
+        <span id="budgetHint">budget 200k tokens</span>
+      </div>
+    </div>
+  </section>
+
+  <aside class="activity" id="activity">
+    <div class="act-head">
+      <span class="rec"><span class="dot"></span> live agent activity</span>
+      <span class="grow"></span>
+      <span class="time" id="elapsed">00:00</span>
+    </div>
+
+    <div class="mini">
+      <canvas id="mini-ascii" aria-hidden="true"></canvas>
+      <img class="mini-fallback" src="assets/svg/tiki-mascot.svg" alt="" />
+      <span class="mini-label">tiki · runner</span>
+      <span class="mini-state"><span class="dot"></span> <span id="miniState">idle</span></span>
+      <div class="mini-foot"><span>speed <b id="speedVal">0.0×</b></span><span>step <b id="stepVal">1</b></span></div>
+    </div>
+
+    <div class="act-sec">
+      <h5>current step</h5>
+      <div class="now">
+        <div class="row1"><span class="tool" id="nowTool">tool.bash</span><span id="nowDesc">idle</span><span class="elapsed" id="nowElapsed">—</span></div>
+        <div class="cmd" id="nowCmd">waiting for instructions</div>
+        <div class="progress"><i id="progBar"></i></div>
+      </div>
+    </div>
+
+    <div class="act-sec">
+      <h5>run <span id="runState">streaming</span></h5>
+      <div class="metrics">
+        <div><b id="mTok">0</b><span>tok/s</span></div>
+        <div><b id="mTools">0</b><span>tool calls</span></div>
+        <div><b id="mLat">41ms</b><span>p50 latency</span></div>
+        <div><b id="mCtx">26%</b><span>context</span></div>
+      </div>
+    </div>
+
+    <div class="act-sec">
+      <h5>plan <span id="planCount">2 / 6</span></h5>
+      <ul class="todo" id="todo">
+        <li class="done"><span class="bx">✓</span> map scope + auth surface</li>
+        <li class="done"><span class="bx">✓</span> recon 10.0.4.0/24</li>
+        <li class="now"><span class="bx"></span> confirm idor on /api/v2/user</li>
+        <li><span class="bx"></span> chain to admin token</li>
+        <li><span class="bx"></span> prove impact + revert</li>
+        <li><span class="bx"></span> write report + patches</li>
+      </ul>
+    </div>
+
+    <div class="act-sec">
+      <h5>subagents <span id="subCount">2 running</span></h5>
+      <div class="agent-row"><span class="nm">recon-web</span><span class="bar"><i style="width:72%"></i></span><span class="pc">72%</span></div>
+      <div class="agent-row"><span class="nm">exploit-chain</span><span class="bar"><i style="width:38%"></i></span><span class="pc">38%</span></div>
+      <div class="agent-row"><span class="nm">report-writer</span><span class="bar"><i style="width:8%"></i></span><span class="pc">8%</span></div>
+    </div>
+
+    <div class="act-sec">
+      <h5>event log <span>last 40</span></h5>
+      <div class="log" id="log"></div>
+    </div>
+  </aside>
+</div>
+
+<footer class="statusbar">
+  <span class="sb"><span class="dot ok"></span> connected <b id="wsInfo">ws://127.0.0.1:4317</b></span>
+  <span class="sb opt">session <b>tk-8842</b></span>
+  <span class="sb opt">model <b>tiki-v3 · flash</b></span>
+  <span class="grow"></span>
+  <span class="sb opt"><span class="ok">●</span> tools sandboxed</span>
+  <span class="sb">⌘K commands</span>
+</footer>
+
+<div class="palette" id="palette" hidden>
+  <div class="pal-box" role="dialog" aria-label="command palette">
+    <input class="pal-input" id="palInput" placeholder="type a command…" autocomplete="off" spellcheck="false" />
+    <ul class="pal-list" id="palList"></ul>
+    <div class="pal-empty" id="palEmpty" hidden>no matching command</div>
+  </div>
+</div>
+
+<script src="assets/js/ascii.js"></script>
+<script src="assets/js/chili.js"></script>
+<script src="assets/js/app.js"></script>
+<script>TikiConsole();</script>
+</body>
+</html>

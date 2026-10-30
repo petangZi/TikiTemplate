@@ -1,0 +1,2897 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>tiki agent — security at the speed of flash</title>
+<meta name="description" content="tiki is a web-native security agent for pentest and code review. Landing page and console in one file." />
+<meta name="theme-color" content="#060607" />
+<link rel="icon" href="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA2NCA2NCIgd2lkdGg9IjY0IiBoZWlnaHQ9IjY0Ij4KICA8ZGVmcz4KICAgIDxsaW5lYXJHcmFkaWVudCBpZD0iZi1iIiB4MT0iMTgiIHkxPSI4IiB4Mj0iNDYiIHkyPSI1OCIgZ3JhZGllbnRVbml0cz0idXNlclNwYWNlT25Vc2UiPgogICAgICA8c3RvcCBvZmZzZXQ9IjAiIHN0b3AtY29sb3I9IiNmZjZhNGEiLz4KICAgICAgPHN0b3Agb2Zmc2V0PSIuNSIgc3RvcC1jb2xvcj0iI2ZmMjMyMyIvPgogICAgICA8c3RvcCBvZmZzZXQ9IjEiIHN0b3AtY29sb3I9IiM4YTA1MDUiLz4KICAgIDwvbGluZWFyR3JhZGllbnQ+CiAgPC9kZWZzPgogIDxyZWN0IHdpZHRoPSI2NCIgaGVpZ2h0PSI2NCIgcng9IjE0IiBmaWxsPSIjMDgwODBhIi8+CiAgPHJlY3QgeD0iMSIgeT0iMSIgd2lkdGg9IjYyIiBoZWlnaHQ9IjYyIiByeD0iMTMuNSIgZmlsbD0ibm9uZSIgc3Ryb2tlPSIjMmEyYTMxIi8+CiAgPHBhdGggZD0iTTM0LjUgMTJjLTcuNiAwLTEyLjYgNS4yLTEzLjcgMTEuNi0xIDUuNi45IDExLjcgMy40IDE3LjQgMiA0LjYgNC40IDguNiA2LjIgMTAuNCAxLjYgMS42IDQgMS40IDUuMi0uNSAxLjItMS44IDEtNC40LjMtN2wtMS45LTYuNGMxLjcgMS41IDMuOCAyLjMgNiAyLjMgNS42IDAgOS42LTQuNCA5LjYtMTAuOUM0OS42IDE4LjQgNDQuMiAxMiAzNC41IDEyWiIgZmlsbD0idXJsKCNmLWIpIi8+CiAgPHBhdGggZD0iTTM0LjggMjAuNiAyNy40IDM0LjRoNS40bC0zLjIgMTAuNSAxMC4yLTE0LjJoLTUuOWwzLjYtOS40WiIgZmlsbD0iI2ZmZDljMiIvPgo8L3N2Zz4K" type="image/svg+xml" />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet" />
+<style>
+/* ============================================================
+   tiki agent — design tokens + shared primitives
+   black / red. mono. zero fluff.
+   ============================================================ */
+
+:root {
+  /* surface */
+  --bg: #060607;
+  --bg-2: #0a0a0c;
+  --panel: #0c0c0f;
+  --panel-2: #101014;
+  --raise: #15151a;
+
+  /* ink */
+  --ink: #f4f1ee;
+  --ink-2: rgba(244, 241, 238, 0.66);
+  --muted: rgba(244, 241, 238, 0.42);
+  --faint: rgba(244, 241, 238, 0.22);
+
+  /* line */
+  --line: rgba(255, 255, 255, 0.08);
+  --line-2: rgba(255, 255, 255, 0.14);
+
+  /* red */
+  --red: #ff2f2f;
+  --red-deep: #c40b0b;
+  --red-soft: rgba(255, 47, 47, 0.14);
+  --ember: #ff6a34;
+  --hot: #ff9d5c;
+
+  /* signal */
+  --ok: #7ee787;
+  --warn: #ffcc66;
+  --info: #7cc4ff;
+
+  --mono: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
+  --sans: "Space Grotesk", "JetBrains Mono", system-ui, sans-serif;
+
+  --r: 4px;
+  --pad: clamp(16px, 2.2vw, 28px);
+  --maxw: 1320px;
+}
+
+*,
+*::before,
+*::after { box-sizing: border-box; }
+
+html, body { margin: 0; padding: 0; }
+
+html { background: var(--bg); }
+
+body {
+  background: var(--bg);
+  color: var(--ink);
+  font-family: var(--mono);
+  font-size: 14px;
+  line-height: 1.6;
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+  overflow-x: hidden;
+}
+
+a { color: inherit; text-decoration: none; }
+button { font: inherit; color: inherit; background: none; border: 0; cursor: pointer; }
+img, svg, canvas { display: block; max-width: 100%; }
+::selection { background: var(--red); color: #fff; }
+
+h1, h2, h3, h4 { margin: 0; font-family: var(--sans); letter-spacing: -0.03em; font-weight: 700; }
+p { margin: 0; }
+
+/* ---------- scrollbars ---------- */
+* { scrollbar-width: thin; scrollbar-color: #2a2a30 transparent; }
+*::-webkit-scrollbar { width: 9px; height: 9px; }
+*::-webkit-scrollbar-track { background: transparent; }
+*::-webkit-scrollbar-thumb { background: #232329; border-radius: 99px; border: 2px solid transparent; background-clip: content-box; }
+*::-webkit-scrollbar-thumb:hover { background: #3a3a44; background-clip: content-box; }
+
+/* ---------- helpers ---------- */
+.wrap { width: 100%; max-width: var(--maxw); margin-inline: auto; padding-inline: var(--pad); }
+.mono { font-family: var(--mono); }
+.muted { color: var(--muted); }
+.faint { color: var(--faint); }
+.red { color: var(--red); }
+.ember { color: var(--ember); }
+.nowrap { white-space: nowrap; }
+
+.kicker {
+  font-size: 11px;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+.tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  font-size: 11px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--red);
+  border: 1px solid rgba(255, 47, 47, 0.35);
+  background: rgba(255, 47, 47, 0.07);
+  padding: 5px 9px;
+  border-radius: 99px;
+}
+
+.dot {
+  width: 6px; height: 6px; border-radius: 50%;
+  background: var(--red);
+  box-shadow: 0 0 0 0 rgba(255, 47, 47, 0.5);
+  animation: pulse 2s infinite;
+  flex: none;
+}
+.dot.ok { background: var(--ok); box-shadow: 0 0 0 0 rgba(126, 231, 135, 0.5); }
+
+@keyframes pulse {
+  0% { box-shadow: 0 0 0 0 currentColor; opacity: 1; }
+  70% { box-shadow: 0 0 0 7px transparent; opacity: 0.9; }
+  100% { box-shadow: 0 0 0 0 transparent; opacity: 1; }
+}
+
+/* ---------- buttons ---------- */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 9px;
+  height: 42px;
+  padding: 0 16px;
+  border-radius: var(--r);
+  font-size: 12.5px;
+  letter-spacing: 0.02em;
+  white-space: nowrap;
+  transition: background 0.16s ease, border-color 0.16s ease, color 0.16s ease, transform 0.12s ease;
+  border: 1px solid transparent;
+}
+.btn:active { transform: translateY(1px); }
+
+.btn-primary {
+  background: var(--red);
+  color: #fff;
+  border-color: var(--red);
+  box-shadow: 0 10px 30px -14px rgba(255, 47, 47, 0.9), inset 0 1px 0 rgba(255, 255, 255, 0.22);
+  font-weight: 500;
+}
+.btn-primary:hover { background: #ff4a4a; border-color: #ff4a4a; }
+
+.btn-ghost {
+  border-color: var(--line-2);
+  color: var(--ink-2);
+  background: rgba(255, 255, 255, 0.02);
+}
+.btn-ghost:hover { border-color: rgba(255, 255, 255, 0.3); color: var(--ink); }
+
+.btn-quiet { color: var(--muted); height: 34px; padding: 0 10px; }
+.btn-quiet:hover { color: var(--ink); background: rgba(255, 255, 255, 0.05); }
+
+/* ---------- brand ---------- */
+.brand {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  font-family: var(--sans);
+  font-weight: 700;
+  font-size: 15px;
+  letter-spacing: -0.02em;
+  color: var(--ink);
+}
+.brand .mark { width: 26px; height: 26px; flex: none; }
+.brand b { color: var(--red); font-weight: 700; }
+.brand .slash { color: var(--faint); font-weight: 400; }
+
+/* ---------- top nav (landing) ---------- */
+.nav {
+  position: relative;
+  z-index: 5;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 24px;
+  padding: 20px clamp(16px, 4vw, 48px);
+  border-bottom: 1px solid var(--line);
+  backdrop-filter: blur(8px);
+}
+.nav-links { display: flex; align-items: center; gap: 26px; font-size: 12px; color: var(--muted); }
+.nav-links a { transition: color 0.15s; }
+.nav-links a:hover { color: var(--ink); }
+.nav-right { display: flex; align-items: center; gap: 12px; }
+
+/* ---------- footer ---------- */
+.footer {
+  border-top: 1px solid var(--line);
+  background: linear-gradient(180deg, transparent, rgba(255, 47, 47, 0.035));
+  padding: 56px 0 26px;
+  position: relative;
+  overflow: hidden;
+}
+.footer-grid {
+  display: grid;
+  grid-template-columns: 1.4fr repeat(3, minmax(0, 1fr));
+  gap: 32px;
+}
+.footer h4 {
+  font-family: var(--mono);
+  font-size: 10.5px;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--muted);
+  margin-bottom: 14px;
+  font-weight: 500;
+}
+.footer ul { list-style: none; margin: 0; padding: 0; display: grid; gap: 9px; font-size: 12.5px; color: var(--ink-2); }
+.footer ul a:hover { color: var(--red); }
+.footer-bottom {
+  margin-top: 48px;
+  padding-top: 18px;
+  border-top: 1px solid var(--line);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 16px;
+  font-size: 11px;
+  color: var(--faint);
+  letter-spacing: 0.04em;
+}
+.footer-wordmark {
+  font-family: var(--sans);
+  font-weight: 700;
+  font-size: clamp(64px, 15vw, 220px);
+  line-height: 0.8;
+  letter-spacing: -0.05em;
+  color: transparent;
+  -webkit-text-stroke: 1px rgba(255, 255, 255, 0.09);
+  margin-top: 40px;
+  user-select: none;
+  pointer-events: none;
+  white-space: nowrap;
+}
+.footer-wordmark b { -webkit-text-stroke: 1px rgba(255, 47, 47, 0.35); }
+
+/* ---------- reveal ---------- */
+.reveal { opacity: 0; transform: translateY(10px); transition: opacity 0.7s ease, transform 0.7s cubic-bezier(0.2, 0.7, 0.2, 1); transition-delay: var(--d, 0ms); }
+.reveal.in { opacity: 1; transform: none; }
+
+@media (prefers-reduced-motion: reduce) {
+  .reveal { opacity: 1 !important; transform: none !important; transition: none; }
+  .dot { animation: none; }
+}
+
+@media (max-width: 900px) {
+  .nav-links { display: none; }
+  .footer-grid { grid-template-columns: 1fr 1fr; }
+}
+
+@media (max-width: 560px) {
+  .footer-grid { grid-template-columns: 1fr; }
+  .footer-bottom { flex-direction: column; align-items: flex-start; }
+}
+
+/* ============================================================
+   tiki agent — landing
+   ============================================================ */
+
+.landing { background: var(--bg); }
+
+/* ---------- nav ---------- */
+.nav { position: sticky; top: 0; background: rgba(6, 6, 7, 0.72); z-index: 40; }
+.nav .status-pill {
+  display: inline-flex; align-items: center; gap: 8px;
+  font-size: 11px; letter-spacing: 0.08em; color: var(--ink-2);
+  border: 1px solid var(--line); border-radius: 99px; padding: 5px 11px 5px 9px;
+  background: rgba(255, 255, 255, 0.02);
+}
+.nav .status-pill b { color: var(--ok); font-weight: 500; }
+
+/* ---------- hero ---------- */
+.hero {
+  position: relative;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  padding: clamp(26px, 4.4vw, 60px) clamp(16px, 4vw, 56px) clamp(48px, 6vw, 84px);
+  min-height: min(calc(100svh - 64px), 940px);
+  isolation: isolate;
+}
+.hero-canvas { position: absolute; inset: 0; width: 100%; height: 100%; z-index: 0; }
+.hero-scrim {
+  position: absolute; inset: 0; z-index: 1; pointer-events: none;
+  background:
+    linear-gradient(90deg, rgba(6,6,7,.98) 0%, rgba(6,6,7,.94) 26%, rgba(6,6,7,.62) 44%, rgba(6,6,7,0) 64%),
+    linear-gradient(180deg, rgba(6,6,7,.9) 0%, rgba(6,6,7,0) 16%, rgba(6,6,7,0) 72%, rgba(6,6,7,.96) 100%);
+}
+.hero-body {
+  position: relative; z-index: 2;
+  width: 100%; max-width: 1180px; margin-inline: auto;
+}
+.hero-copy { max-width: 600px; }
+
+.hero h1 {
+  margin: 18px 0 0;
+  font-size: clamp(40px, 5vw, 70px);
+  line-height: 0.96;
+  letter-spacing: -0.045em;
+  font-weight: 700;
+}
+.hero h1 .dim { color: rgba(244, 241, 238, 0.42); font-weight: 500; }
+.hero h1 .hot {
+  background: linear-gradient(96deg, #ff5a3c 0%, #ff2f2f 45%, #ff8a5c 100%);
+  -webkit-background-clip: text; background-clip: text; color: transparent;
+  font-style: italic;
+}
+.hero .sub {
+  margin-top: 22px; max-width: 448px;
+  color: var(--ink-2); font-size: 13.5px; line-height: 1.75;
+}
+.hero .sub em { color: var(--ink); font-style: normal; border-bottom: 1px solid rgba(255, 47, 47, 0.5); }
+
+.hero-cta { margin-top: 28px; display: flex; flex-wrap: wrap; gap: 10px; }
+
+.hero-meta {
+  margin-top: 26px; display: flex; flex-wrap: wrap; gap: 8px 26px;
+  font-size: 11px; color: var(--muted); letter-spacing: 0.04em;
+}
+.hero-meta b { color: var(--ink); font-weight: 500; }
+.hero-meta span { display: inline-flex; align-items: center; gap: 7px; }
+.hero-meta i {
+  width: 4px; height: 4px; border-radius: 50%; background: var(--red); flex: none;
+}
+
+/* floating hud chips over the runner */
+.hero-hud {
+  position: absolute; z-index: 3; right: clamp(16px, 4vw, 56px); top: 13%;
+  display: grid; gap: 9px; justify-items: end; pointer-events: none;
+}
+.hud-chip {
+  display: inline-flex; align-items: center; gap: 9px;
+  font-size: 10.5px; letter-spacing: 0.08em; text-transform: uppercase;
+  color: var(--ink-2);
+  background: rgba(9, 9, 11, 0.66);
+  border: 1px solid var(--line);
+  border-radius: 3px;
+  padding: 7px 10px;
+  backdrop-filter: blur(8px);
+  animation: hud-in 0.8s ease both;
+}
+.hud-chip:nth-child(2) { animation-delay: 0.12s; }
+.hud-chip:nth-child(3) { animation-delay: 0.24s; }
+.hud-chip b { color: var(--red); font-weight: 500; }
+.hud-chip .bar {
+  width: 46px; height: 3px; background: rgba(255,255,255,.12); border-radius: 99px; overflow: hidden;
+}
+.hud-chip .bar i { display: block; height: 100%; background: linear-gradient(90deg, var(--red-deep), var(--red)); animation: bar 2.6s ease-in-out infinite alternate; }
+@keyframes hud-in { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: none; } }
+@keyframes bar { from { width: 28%; } to { width: 86%; } }
+
+/* terminal card */
+.term-card {
+  margin-top: 30px; width: min(520px, 100%);
+  border: 1px solid var(--line);
+  background: rgba(8, 8, 10, 0.78);
+  backdrop-filter: blur(10px);
+  border-radius: 5px;
+  overflow: hidden;
+  box-shadow: 0 30px 80px -50px rgba(255, 47, 47, 0.7);
+}
+.term-head {
+  display: flex; align-items: center; gap: 10px;
+  padding: 9px 12px; border-bottom: 1px solid var(--line);
+  font-size: 10.5px; color: var(--muted); letter-spacing: 0.06em;
+}
+.term-head .dots { display: flex; gap: 5px; }
+.term-head .dots i { width: 7px; height: 7px; border-radius: 50%; background: #2a2a31; }
+.term-head .dots i:first-child { background: var(--red); }
+.term-head .grow { flex: 1; }
+.term-head .live { color: var(--red); display: inline-flex; align-items: center; gap: 6px; }
+.term-body {
+  padding: 13px 14px 15px; font-size: 11.5px; line-height: 1.85;
+  min-height: 132px; white-space: pre-wrap; color: var(--ink-2);
+  font-family: var(--mono);
+}
+.term-body .ok { color: var(--ok); }
+.term-body .hl { color: var(--hot); }
+.term-body .arrow { color: var(--red); }
+.term-body .dim { color: var(--faint); }
+.caret {
+  display: inline-block; width: 7px; height: 13px; background: var(--red);
+  vertical-align: -2px; animation: caret 1.05s steps(2) infinite;
+}
+@keyframes caret { 50% { opacity: 0; } }
+
+@media (prefers-reduced-motion: reduce) {
+  .hud-chip, .hud-chip .bar i, .caret { animation: none !important; }
+}
+
+/* ---------- ticker ---------- */
+.ticker {
+  border-top: 1px solid var(--line);
+  border-bottom: 1px solid var(--line);
+  background: #08080a;
+  overflow: hidden; position: relative;
+}
+.ticker-track {
+  display: flex; gap: 0; width: max-content;
+  animation: ticker 38s linear infinite;
+}
+.ticker span {
+  display: inline-flex; align-items: center; gap: 14px;
+  padding: 11px 22px;
+  font-size: 10.5px; letter-spacing: 0.22em; text-transform: uppercase;
+  color: var(--muted); white-space: nowrap;
+}
+.ticker span b { color: var(--red); font-weight: 500; }
+@keyframes ticker { to { transform: translateX(-50%); } }
+
+/* ---------- section frame ---------- */
+.section { padding: clamp(58px, 8vw, 112px) 0; border-top: 1px solid var(--line); position: relative; }
+.section-head { display: grid; gap: 14px; max-width: 660px; margin-bottom: 44px; }
+.section-head h2 {
+  font-size: clamp(26px, 3.4vw, 42px); line-height: 1.04; letter-spacing: -0.035em;
+}
+.section-head h2 span { color: var(--red); }
+.section-head p { color: var(--ink-2); font-size: 13.5px; line-height: 1.75; max-width: 520px; }
+.sec-label {
+  display: flex; align-items: center; gap: 10px;
+  font-size: 10.5px; letter-spacing: 0.2em; text-transform: uppercase; color: var(--muted);
+}
+.sec-label::before { content: ""; width: 22px; height: 1px; background: var(--red); }
+
+/* ---------- stats ---------- */
+.stats {
+  display: grid; grid-template-columns: repeat(4, minmax(0, 1fr));
+  border: 1px solid var(--line); border-radius: 6px; overflow: hidden;
+  background: linear-gradient(180deg, rgba(255,255,255,.018), transparent);
+}
+.stat { padding: 26px 22px; border-right: 1px solid var(--line); position: relative; }
+.stat:last-child { border-right: 0; }
+.stat::before {
+  content: ""; position: absolute; left: 22px; top: 0; width: 26px; height: 1px;
+  background: var(--red); opacity: .8;
+}
+.stat b {
+  display: block; font-family: var(--sans); font-size: clamp(26px, 3vw, 38px);
+  letter-spacing: -0.04em; line-height: 1;
+}
+.stat b i { font-style: normal; color: var(--red); }
+.stat span { display: block; margin-top: 9px; font-size: 11px; color: var(--muted); letter-spacing: 0.04em; }
+
+/* ---------- feature cards ---------- */
+.features { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 1px; background: var(--line); border: 1px solid var(--line); border-radius: 6px; overflow: hidden; }
+.card {
+  background: #0a0a0c; padding: 24px 22px 26px; min-height: 190px;
+  display: flex; flex-direction: column; gap: 12px; position: relative;
+  transition: background 0.2s ease;
+}
+.card:hover { background: #0e0e12; }
+.card .ico {
+  width: 34px; height: 34px; border-radius: 4px;
+  border: 1px solid rgba(255, 47, 47, 0.3); background: rgba(255, 47, 47, 0.08);
+  display: grid; place-items: center; color: var(--red);
+}
+.card .ico svg { width: 17px; height: 17px; }
+.card h3 { font-size: 14.5px; font-family: var(--sans); letter-spacing: -0.01em; }
+.card p { font-size: 12px; line-height: 1.7; color: var(--muted); }
+.card .idx {
+  position: absolute; top: 20px; right: 20px; font-size: 10px; color: var(--faint); letter-spacing: 0.1em;
+}
+.card:hover .idx { color: var(--red); }
+
+/* ---------- live lab ---------- */
+.lab { display: grid; grid-template-columns: minmax(0, 0.85fr) minmax(0, 1.15fr); gap: clamp(28px, 4vw, 56px); align-items: center; }
+.lab-copy h2 { font-size: clamp(26px, 3.2vw, 40px); line-height: 1.06; letter-spacing: -0.035em; margin: 16px 0 18px; }
+.lab-copy p { color: var(--ink-2); font-size: 13.5px; line-height: 1.8; }
+.lab-list { margin: 24px 0 0; padding: 0; list-style: none; display: grid; gap: 12px; }
+.lab-list li { display: flex; gap: 10px; font-size: 12px; color: var(--ink-2); }
+.lab-list li b { color: var(--red); font-weight: 500; }
+
+.panel {
+  border: 1px solid var(--line); border-radius: 6px; overflow: hidden;
+  background: #08080a; box-shadow: 0 40px 120px -70px rgba(255, 47, 47, 0.8);
+}
+.panel-head {
+  display: flex; align-items: center; gap: 10px; padding: 10px 13px;
+  border-bottom: 1px solid var(--line); font-size: 10.5px; letter-spacing: 0.1em;
+  text-transform: uppercase; color: var(--muted); background: #0b0b0e;
+}
+.panel-head .grow { flex: 1; }
+.panel-head .rec { color: var(--red); display: inline-flex; align-items: center; gap: 6px; }
+.panel-body { padding: 8px 0; max-height: 330px; overflow: hidden; }
+.act-row {
+  display: grid; grid-template-columns: 58px 84px 1fr auto;
+  gap: 10px; align-items: center;
+  padding: 7px 13px; font-size: 11px; color: var(--ink-2);
+  border-left: 2px solid transparent;
+  animation: row-in 0.4s ease both;
+}
+.act-row:hover { background: rgba(255, 255, 255, 0.03); }
+.act-row.busy { border-left-color: var(--red); background: rgba(255, 47, 47, 0.05); }
+.act-row .t { color: var(--faint); }
+.act-row .tool { color: var(--red); }
+.act-row .arg { color: var(--ink-2); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.act-row .st { font-size: 10px; color: var(--ok); }
+.act-row .st.run { color: var(--warn); }
+@keyframes row-in { from { opacity: 0; transform: translateY(-4px); } to { opacity: 1; transform: none; } }
+
+/* ---------- flow ---------- */
+.flow { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 0; border: 1px solid var(--line); border-radius: 6px; overflow: hidden; }
+.flow-step { padding: 22px 20px 26px; border-right: 1px solid var(--line); position: relative; background: #0a0a0c; }
+.flow-step:last-child { border-right: 0; }
+.flow-step .n { font-size: 10px; color: var(--red); letter-spacing: 0.14em; }
+.flow-step h4 { margin: 12px 0 7px; font-family: var(--sans); font-size: 13.5px; }
+.flow-step p { font-size: 11px; line-height: 1.65; color: var(--muted); }
+.flow-step::after {
+  content: ""; position: absolute; right: -1px; top: 0; width: 1px; height: 100%;
+  background: linear-gradient(180deg, transparent, var(--red), transparent); opacity: 0; transition: opacity .25s;
+}
+.flow-step:hover::after { opacity: 1; }
+
+/* ---------- cta ---------- */
+.cta {
+  position: relative; overflow: hidden;
+  border: 1px solid rgba(255, 47, 47, 0.22);
+  border-radius: 8px;
+  background:
+    radial-gradient(120% 140% at 88% 30%, rgba(255, 47, 47, 0.22), transparent 60%),
+    linear-gradient(180deg, #0d0507, #08080a);
+  padding: clamp(30px, 4vw, 52px);
+  display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 26px; align-items: center;
+}
+.cta h2 { font-size: clamp(26px, 3.6vw, 46px); line-height: 1.02; letter-spacing: -0.04em; }
+.cta p { margin-top: 14px; color: var(--ink-2); font-size: 13px; max-width: 440px; line-height: 1.7; }
+.cta .actions { margin-top: 24px; display: flex; gap: 10px; flex-wrap: wrap; }
+.cta img { width: clamp(200px, 24vw, 320px); filter: drop-shadow(0 30px 60px rgba(255, 47, 47, 0.35)); }
+
+/* ---------- footer ---------- */
+.footer .brand { margin-bottom: 16px; }
+.footer .blurb { font-size: 12px; color: var(--muted); max-width: 260px; line-height: 1.7; }
+
+/* ---------- responsive ---------- */
+@media (max-width: 1080px) {
+  .features { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .flow { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .flow-step { border-bottom: 1px solid var(--line); }
+  .hero-hud { display: none; }
+}
+@media (max-width: 900px) {
+  .hero { min-height: auto; padding-bottom: 40px; }
+  .hero-scrim {
+    background:
+      linear-gradient(180deg, rgba(6,6,7,.55) 0%, rgba(6,6,7,.2) 22%, rgba(6,6,7,.86) 52%, rgba(6,6,7,.98) 72%),
+      radial-gradient(70% 50% at 70% 20%, transparent, rgba(6,6,7,.6));
+  }
+  .hero-copy { max-width: 100%; }
+  .hero h1 { font-size: clamp(38px, 9vw, 62px); }
+  .stats { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .stat:nth-child(2n) { border-right: 0; }
+  .stat:nth-child(-n + 2) { border-bottom: 1px solid var(--line); }
+  .lab { grid-template-columns: 1fr; }
+  .cta { grid-template-columns: 1fr; }
+  .cta img { display: none; }
+}
+@media (max-width: 640px) {
+  .features { grid-template-columns: 1fr; }
+  .flow { grid-template-columns: 1fr; }
+  .term-card { margin-top: 24px; }
+  .hero-meta { gap: 6px 18px; }
+}
+
+/* ---------- non-webgl fallback ---------- */
+.hero-fallback { display: none; position: absolute; right: 1%; top: 50%; transform: translateY(-50%); width: min(46vw, 580px); aspect-ratio: 440 / 360; z-index: 1; pointer-events: none; }
+.hero.no-webgl .hero-fallback { display: block; }
+.hero.no-webgl .hero-canvas { display: none; }
+.hero-fallback img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: contain; }
+.fb-ghost { opacity: 0.16; filter: blur(1px); }
+.fb-ghost.g1 { transform: translateX(-10%); }
+.fb-ghost.g2 { transform: translateX(-19%); opacity: 0.07; }
+.fb-run { animation: fb-bob 1.15s ease-in-out infinite alternate; }
+@keyframes fb-bob { to { transform: translate(-1%, -2%); } }
+@media (max-width: 1100px) {
+  .hero-fallback { width: 42vw; right: -6%; opacity: 0.55; }
+}
+@media (max-width: 900px) {
+  .hero-fallback { width: 74vw; right: -14%; top: 30%; opacity: 0.72; }
+}
+@media (prefers-reduced-motion: reduce) { .fb-run { animation: none; } }
+
+/* ============================================================
+   tiki agent — console
+   ============================================================ */
+
+.app {
+  height: 100dvh;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  background:
+    radial-gradient(70% 50% at 78% 0%, rgba(255, 47, 47, 0.06), transparent 70%),
+    #070708;
+}
+
+/* ---------- topbar ---------- */
+.topbar {
+  height: 56px;
+  flex: none;
+  display: flex;
+  align-items: center;
+  gap: 18px;
+  padding: 0 14px;
+  border-bottom: 1px solid var(--line);
+  background: rgba(8, 8, 10, 0.92);
+  backdrop-filter: blur(10px);
+  z-index: 20;
+}
+.topbar .brand { font-size: 14px; }
+.topbar .brand .mark { width: 22px; height: 22px; }
+
+.crumbs {
+  display: flex; align-items: center; gap: 8px;
+  font-size: 11.5px; color: var(--muted);
+  padding-left: 16px; border-left: 1px solid var(--line);
+}
+.crumbs b { color: var(--ink-2); font-weight: 500; }
+.crumbs .sep { color: var(--faint); }
+.crumbs .modified { color: var(--warn); font-size: 10px; }
+
+.topbar .grow { flex: 1; }
+
+.chip {
+  display: inline-flex; align-items: center; gap: 7px;
+  height: 30px; padding: 0 10px;
+  border: 1px solid var(--line); border-radius: 4px;
+  background: rgba(255, 255, 255, 0.02);
+  font-size: 11px; color: var(--ink-2); white-space: nowrap;
+  transition: border-color 0.15s, color 0.15s, background 0.15s;
+}
+.chip:hover { border-color: rgba(255, 255, 255, 0.24); color: var(--ink); }
+.chip .k { color: var(--muted); font-size: 10px; letter-spacing: 0.08em; text-transform: uppercase; }
+.chip b { color: var(--ink); font-weight: 500; }
+.chip.agent-pill { border-color: rgba(255, 47, 47, 0.28); background: rgba(255, 47, 47, 0.06); color: var(--red); }
+.chip.agent-pill.idle { border-color: var(--line); background: transparent; color: var(--muted); }
+
+.icon-btn {
+  width: 30px; height: 30px; display: grid; place-items: center;
+  border: 1px solid var(--line); border-radius: 4px; color: var(--muted);
+  transition: 0.15s;
+}
+.icon-btn:hover { color: var(--ink); border-color: rgba(255, 255, 255, 0.24); }
+
+/* ---------- shell ---------- */
+.shell {
+  flex: 1;
+  min-height: 0;
+  display: grid;
+  grid-template-columns: 246px minmax(0, 1fr) 344px;
+}
+
+/* ---------- rail ---------- */
+.rail {
+  border-right: 1px solid var(--line);
+  background: #08080a;
+  display: flex; flex-direction: column;
+  min-height: 0;
+}
+.rail-block { padding: 12px 10px; border-bottom: 1px solid var(--line); }
+.rail-block.scroll { overflow-y: auto; flex: 1; }
+.rail-head {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 0 4px 8px;
+  font-size: 9.5px; letter-spacing: 0.18em; text-transform: uppercase; color: var(--faint);
+}
+.rail-head button { color: var(--faint); }
+.rail-head button:hover { color: var(--red); }
+
+.session {
+  display: flex; align-items: center; gap: 8px;
+  padding: 7px 8px; border-radius: 4px; font-size: 11.5px; color: var(--ink-2);
+  cursor: pointer; border-left: 2px solid transparent;
+}
+.session:hover { background: rgba(255, 255, 255, 0.03); }
+.session.active { background: rgba(255, 47, 47, 0.07); border-left-color: var(--red); color: var(--ink); }
+.session .dot { width: 5px; height: 5px; background: var(--faint); box-shadow: none; animation: none; }
+.session.active .dot { background: var(--red); }
+.session .meta { margin-left: auto; font-size: 9.5px; color: var(--faint); }
+
+.tree { display: grid; gap: 1px; }
+.tree-row {
+  display: flex; align-items: center; gap: 7px;
+  padding: 5px 8px; font-size: 11.5px; color: var(--ink-2); border-radius: 3px;
+  cursor: pointer;
+}
+.tree-row:hover { background: rgba(255, 255, 255, 0.035); }
+.tree-row.active { background: rgba(255, 47, 47, 0.09); color: var(--ink); }
+.tree-row .fav { width: 12px; text-align: center; color: var(--faint); }
+.tree-row.folder { color: var(--muted); font-size: 11px; letter-spacing: 0.02em; }
+.tree-row .mod { margin-left: auto; width: 5px; height: 5px; border-radius: 50%; background: var(--warn); }
+.tree-row .add { margin-left: auto; width: 5px; height: 5px; border-radius: 50%; background: var(--ok); }
+
+.rail-foot { padding: 10px; border-top: 1px solid var(--line); display: flex; align-items: center; gap: 9px; }
+.rail-foot img { width: 28px; height: 28px; }
+.rail-foot .nm { font-size: 11px; color: var(--ink); line-height: 1.3; }
+.rail-foot .nm span { display: block; font-size: 9.5px; color: var(--faint); letter-spacing: 0.06em; }
+
+/* ---------- chat ---------- */
+.chat { display: flex; flex-direction: column; min-width: 0; min-height: 0; position: relative; }
+
+.thread-head {
+  flex: none;
+  display: flex; align-items: center; gap: 10px;
+  padding: 12px 22px;
+  border-bottom: 1px solid var(--line);
+  background: rgba(8, 8, 10, 0.6);
+}
+.thread-head h1 { font-size: 13px; font-family: var(--mono); font-weight: 500; letter-spacing: 0; }
+.thread-head .sev {
+  font-size: 9.5px; letter-spacing: 0.12em; text-transform: uppercase;
+  color: var(--red); border: 1px solid rgba(255, 47, 47, 0.35); background: rgba(255, 47, 47, 0.08);
+  padding: 2px 6px; border-radius: 3px;
+}
+.thread-head .grow { flex: 1; }
+.thread-head .tool-mini { font-size: 10.5px; color: var(--faint); letter-spacing: 0.06em; }
+
+.stream {
+  flex: 1; min-height: 0; overflow-y: auto;
+  padding: 10px 22px 24px;
+  scroll-behavior: smooth;
+}
+
+.msg { display: grid; grid-template-columns: 26px minmax(0, 1fr); gap: 12px; padding: 16px 0; border-bottom: 1px solid rgba(255,255,255,.035); }
+.msg:last-child { border-bottom: 0; }
+.msg .avatar {
+  width: 26px; height: 26px; border-radius: 4px; display: grid; place-items: center;
+  background: #121216; border: 1px solid #24242c; color: var(--ink-2);
+  font-size: 10.5px; font-family: var(--mono);
+}
+.msg.agent .avatar { border-color: rgba(255, 47, 47, 0.4); background: rgba(255, 47, 47, 0.1); color: #ff6d5a; }
+.msg .who {
+  display: flex; align-items: baseline; gap: 8px;
+  font-size: 10px; letter-spacing: 0.12em; text-transform: uppercase; color: var(--muted);
+  margin-bottom: 6px;
+}
+.msg .who b { color: var(--ink); font-weight: 500; letter-spacing: 0.06em; }
+.msg .who time { color: var(--faint); font-size: 9.5px; letter-spacing: 0.04em; margin-left: auto; }
+.msg .body { font-size: 13px; line-height: 1.72; color: var(--ink-2); }
+.msg .body p + p { margin-top: 10px; }
+.msg .body strong { color: var(--ink); font-weight: 600; }
+.msg .body code {
+  font-size: 11.8px; color: #ffb3a4; background: #16161b; border: 1px solid #24242c;
+  padding: 1px 5px; border-radius: 3px;
+}
+.msg .body ul { margin: 8px 0 0; padding-left: 18px; }
+.msg .body li { margin: 4px 0; }
+
+.thinking { display: inline-flex; gap: 5px; align-items: center; color: var(--muted); font-size: 11px; }
+.thinking i { width: 4px; height: 4px; border-radius: 50%; background: var(--red); animation: blink 1.1s infinite; }
+.thinking i:nth-child(2) { animation-delay: 0.15s; }
+.thinking i:nth-child(3) { animation-delay: 0.3s; }
+@keyframes blink { 0%, 100% { opacity: 0.25; } 50% { opacity: 1; } }
+
+.stream-caret {
+  display: inline-block; width: 7px; height: 13px; background: var(--red);
+  vertical-align: -2px; animation: caret2 1s steps(2) infinite;
+}
+@keyframes caret2 { 50% { opacity: 0; } }
+
+/* ---------- tool call ---------- */
+.tool {
+  margin: 10px 0;
+  border: 1px solid #1c1c23;
+  border-radius: 5px;
+  background: #0a0a0d;
+  overflow: hidden;
+}
+.tool > summary {
+  list-style: none;
+  display: flex; align-items: center; gap: 9px;
+  padding: 8px 11px;
+  font-size: 11.5px; color: var(--ink-2); cursor: pointer;
+  user-select: none;
+}
+.tool > summary::-webkit-details-marker { display: none; }
+.tool .ti {
+  width: 20px; height: 20px; flex: none; border-radius: 3px;
+  display: grid; place-items: center;
+  border: 1px solid rgba(255, 47, 47, 0.28); background: rgba(255, 47, 47, 0.07);
+  color: var(--red); font-size: 10px;
+}
+.tool .nm { color: var(--ink); font-weight: 500; }
+.tool .ar {
+  color: var(--muted); font-size: 10.8px;
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap; flex: 1;
+}
+.tool .st {
+  font-size: 9.5px; letter-spacing: 0.06em; padding: 2px 6px; border-radius: 3px;
+  border: 1px solid #26262e; color: var(--muted);
+}
+.tool .st.ok { color: var(--ok); border-color: rgba(126, 231, 135, 0.25); }
+.tool .st.run { color: var(--warn); border-color: rgba(255, 204, 102, 0.28); }
+.tool .st.err { color: var(--red); border-color: rgba(255, 47, 47, 0.35); }
+.tool pre {
+  margin: 0; padding: 10px 12px;
+  border-top: 1px solid #1c1c23;
+  font-size: 11.3px; line-height: 1.62; color: #9c968f;
+  background: #070709; max-height: 240px; overflow: auto;
+  font-family: var(--mono); white-space: pre-wrap;
+}
+.tool pre .ok { color: var(--ok); }
+.tool pre .hl { color: var(--ember); }
+.tool pre .dim { color: var(--faint); }
+
+/* ---------- diff ---------- */
+.diff { margin: 10px 0; border: 1px solid #1c1c23; border-radius: 5px; overflow: hidden; background: #08080a; }
+.diff-head {
+  display: flex; align-items: center; gap: 8px; padding: 7px 11px;
+  border-bottom: 1px solid #1c1c23; font-size: 10.5px; color: var(--muted);
+}
+.diff-head .f { color: var(--ink-2); }
+.diff-head .add { color: var(--ok); }
+.diff-head .del { color: var(--red); }
+.diff pre { margin: 0; padding: 8px 0; font-size: 11.3px; line-height: 1.6; overflow-x: auto; }
+.diff .ln { display: block; padding: 0 12px; white-space: pre; color: #8f8a85; }
+.diff .ln.a { background: rgba(46, 160, 67, 0.09); color: #9fdc9f; }
+.diff .ln.d { background: rgba(255, 47, 47, 0.08); color: #ff9d9d; }
+.diff .ln .g { color: var(--faint); display: inline-block; width: 34px; user-select: none; }
+
+/* ---------- composer ---------- */
+.composer { flex: none; border-top: 1px solid var(--line); background: #08080a; padding: 12px 22px 14px; }
+.composer-box {
+  border: 1px solid #22222a; border-radius: 6px; background: #0b0b0e;
+  transition: border-color 0.16s, box-shadow 0.16s;
+}
+.composer-box:focus-within { border-color: rgba(255, 47, 47, 0.45); box-shadow: 0 0 0 3px rgba(255, 47, 47, 0.07); }
+.composer textarea {
+  width: 100%; display: block; resize: none; border: 0; outline: 0;
+  background: transparent; color: var(--ink);
+  font-family: var(--mono); font-size: 12.5px; line-height: 1.6;
+  padding: 12px 12px 6px; min-height: 46px; max-height: 180px;
+}
+.composer textarea::placeholder { color: var(--faint); }
+.composer-bar {
+  display: flex; align-items: center; gap: 8px;
+  padding: 6px 8px 8px 10px;
+}
+.composer-bar .grow { flex: 1; }
+.pchip {
+  display: inline-flex; align-items: center; gap: 6px;
+  height: 24px; padding: 0 8px; border-radius: 3px;
+  border: 1px solid #22222a; background: #101014;
+  font-size: 10px; letter-spacing: 0.06em; color: var(--muted); text-transform: uppercase;
+}
+.pchip:hover { color: var(--ink); border-color: #33333d; }
+.pchip.on { color: var(--red); border-color: rgba(255, 47, 47, 0.4); background: rgba(255, 47, 47, 0.07); }
+.send {
+  display: inline-flex; align-items: center; gap: 7px;
+  height: 28px; padding: 0 12px; border-radius: 4px;
+  background: var(--red); color: #fff; font-size: 11.5px; font-weight: 500;
+  box-shadow: 0 8px 24px -12px rgba(255, 47, 47, 0.9);
+}
+.send:hover { background: #ff4545; }
+.send:disabled { opacity: 0.45; box-shadow: none; cursor: not-allowed; }
+.composer-hint {
+  display: flex; justify-content: space-between; gap: 12px;
+  margin-top: 7px; font-size: 9.8px; color: var(--faint); letter-spacing: 0.04em;
+}
+kbd {
+  font-family: var(--mono); font-size: 9.5px; color: var(--ink-2);
+  border: 1px solid #2a2a33; border-bottom-width: 2px; border-radius: 3px;
+  padding: 0 4px; background: #121216;
+}
+
+/* ---------- activity ---------- */
+.activity {
+  border-left: 1px solid var(--line);
+  background: #08080a;
+  display: flex; flex-direction: column; min-height: 0;
+  overflow-y: auto;
+}
+.act-head {
+  flex: none;
+  display: flex; align-items: center; gap: 8px;
+  padding: 11px 14px; border-bottom: 1px solid var(--line);
+  font-size: 9.5px; letter-spacing: 0.16em; text-transform: uppercase; color: var(--muted);
+  position: sticky; top: 0; background: #08080a; z-index: 2;
+}
+.act-head .rec { display: inline-flex; align-items: center; gap: 6px; color: var(--red); }
+.act-head .grow { flex: 1; }
+.act-head .time { color: var(--faint); letter-spacing: 0.08em; font-size: 10px; }
+
+.mini {
+  position: relative; height: 132px; flex: none;
+  border-bottom: 1px solid var(--line);
+  background: radial-gradient(60% 60% at 50% 55%, rgba(255, 47, 47, 0.12), transparent 70%), #060607;
+  overflow: hidden;
+}
+.mini canvas { position: absolute; inset: 0; width: 100%; height: 100%; }
+.mini-label {
+  position: absolute; left: 12px; top: 10px;
+  font-size: 9px; letter-spacing: 0.16em; text-transform: uppercase; color: var(--faint);
+}
+.mini-state {
+  position: absolute; right: 12px; top: 10px;
+  font-size: 9px; letter-spacing: 0.12em; text-transform: uppercase; color: var(--red);
+  display: inline-flex; align-items: center; gap: 5px;
+}
+.mini-foot {
+  position: absolute; left: 12px; right: 12px; bottom: 9px;
+  display: flex; justify-content: space-between; align-items: center;
+  font-size: 9.5px; color: var(--faint); letter-spacing: 0.06em;
+}
+.mini-foot b { color: var(--ink-2); font-weight: 500; }
+
+.act-sec { padding: 10px 14px; border-bottom: 1px solid var(--line); }
+.act-sec:last-child { border-bottom: 0; }
+.act-sec > h5 {
+  margin: 0 0 10px; font-size: 9px; letter-spacing: 0.16em;
+  text-transform: uppercase; color: var(--faint); font-weight: 400; font-family: var(--mono);
+  display: flex; justify-content: space-between;
+}
+.act-sec > h5 span { color: var(--muted); letter-spacing: 0.06em; }
+
+.now {
+  border: 1px solid #1e1e25; border-radius: 4px; padding: 9px 10px; background: #0b0b0f;
+}
+.now .row1 { display: flex; align-items: center; gap: 7px; font-size: 11px; }
+.now .row1 .tool { color: var(--red); }
+.now .row1 .elapsed { margin-left: auto; font-size: 9.5px; color: var(--faint); }
+.now .cmd {
+  margin-top: 6px; font-size: 10.5px; color: var(--muted);
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.progress { margin-top: 8px; height: 3px; background: #1c1c22; border-radius: 99px; overflow: hidden; }
+.progress i {
+  display: block; height: 100%; width: 0%;
+  background: linear-gradient(90deg, #8c0708, var(--red));
+  transition: width 0.45s cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+.metrics { display: grid; grid-template-columns: 1fr 1fr; gap: 1px; background: var(--line); border: 1px solid var(--line); border-radius: 4px; overflow: hidden; }
+.metrics div { background: #0b0b0f; padding: 8px 9px; }
+.metrics b { display: block; font-size: 14px; color: var(--ink); font-weight: 500; letter-spacing: -0.01em; }
+.metrics span { font-size: 8.8px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--faint); }
+
+.todo { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; }
+.todo li { display: flex; align-items: flex-start; gap: 8px; font-size: 11px; color: var(--muted); line-height: 1.45; }
+.todo li .bx {
+  width: 12px; height: 12px; flex: none; margin-top: 1px; border-radius: 2px;
+  border: 1px solid #2e2e37; display: grid; place-items: center;
+  font-size: 8px; color: transparent;
+}
+.todo li.done { color: var(--faint); text-decoration: line-through; text-decoration-color: #3a3a44; }
+.todo li.done .bx { border-color: rgba(126, 231, 135, 0.4); background: rgba(126, 231, 135, 0.12); color: var(--ok); }
+.todo li.now { color: var(--ink); }
+.todo li.now .bx { border-color: var(--red); background: rgba(255, 47, 47, 0.16); }
+.todo li.now .bx::after { content: ""; width: 4px; height: 4px; border-radius: 50%; background: var(--red); animation: blink 1s infinite; }
+
+.agent-row { display: flex; align-items: center; gap: 8px; font-size: 10.5px; color: var(--muted); padding: 5px 0; }
+.agent-row .nm { color: var(--ink-2); }
+.agent-row .bar { flex: 1; height: 2px; background: #1c1c22; border-radius: 99px; overflow: hidden; }
+.agent-row .bar i { display: block; height: 100%; background: var(--red); }
+.agent-row .pc { font-size: 9px; color: var(--faint); width: 26px; text-align: right; }
+
+.log { font-size: 10px; line-height: 1.65; color: var(--muted); display: grid; gap: 2px; max-height: 128px; overflow-y: auto; }
+.log .e { display: flex; gap: 7px; min-width: 0; }
+.log .e time { color: #3d3d47; flex: none; }
+.log .e .k { color: #6f6a66; }
+.log .e .v { color: var(--ink-2); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; flex: 1; min-width: 0; }
+.log .e.hot .k { color: var(--red); }
+.log .e.ok .v { color: var(--ok); }
+
+/* ---------- statusbar ---------- */
+.statusbar {
+  height: 26px; flex: none;
+  display: flex; align-items: center; gap: 16px;
+  padding: 0 12px;
+  border-top: 1px solid var(--line);
+  background: #0a0a0d;
+  font-size: 10px; color: var(--faint); letter-spacing: 0.05em;
+}
+.statusbar .sb { display: inline-flex; align-items: center; gap: 6px; }
+.statusbar .sb b { color: var(--ink-2); font-weight: 500; }
+.statusbar .grow { flex: 1; }
+.statusbar .ok { color: var(--ok); }
+
+/* ---------- palette ---------- */
+.palette {
+  position: fixed; inset: 0; z-index: 80;
+  background: rgba(4, 4, 5, 0.72);
+  backdrop-filter: blur(6px);
+  display: grid; place-items: start center;
+  padding-top: min(18vh, 160px);
+}
+.palette[hidden] { display: none; }
+.pal-box {
+  width: min(560px, calc(100vw - 32px));
+  border: 1px solid #26262e; border-radius: 7px;
+  background: #0b0b0e; overflow: hidden;
+  box-shadow: 0 40px 120px -40px rgba(0, 0, 0, 0.9);
+  animation: pop 0.16s ease both;
+}
+@keyframes pop { from { opacity: 0; transform: translateY(-6px) scale(0.99); } to { opacity: 1; transform: none; } }
+.pal-input {
+  width: 100%; border: 0; outline: 0; background: transparent; color: var(--ink);
+  font-family: var(--mono); font-size: 13px; padding: 14px 16px;
+  border-bottom: 1px solid var(--line);
+}
+.pal-list { list-style: none; margin: 0; padding: 6px; max-height: 300px; overflow-y: auto; }
+.pal-list li {
+  display: flex; align-items: center; gap: 10px;
+  padding: 9px 10px; border-radius: 4px; font-size: 12px; color: var(--ink-2); cursor: pointer;
+}
+.pal-list li .k { margin-left: auto; font-size: 9.5px; color: var(--faint); }
+.pal-list li.sel { background: rgba(255, 47, 47, 0.1); color: var(--ink); }
+.pal-list li.sel .k { color: var(--red); }
+.pal-empty { padding: 18px 16px; font-size: 11.5px; color: var(--faint); }
+
+/* ---------- responsive ---------- */
+@media (max-width: 1200px) {
+  .shell { grid-template-columns: 210px minmax(0, 1fr) 300px; }
+}
+@media (max-width: 1040px) {
+  .shell { grid-template-columns: minmax(0, 1fr) 300px; }
+  .rail { display: none; }
+  .rail.open {
+    display: flex; position: fixed; left: 0; top: 56px; bottom: 26px; width: 246px; z-index: 30;
+    box-shadow: 30px 0 60px -30px rgba(0, 0, 0, 0.9);
+  }
+}
+@media (max-width: 820px) {
+  .shell { grid-template-columns: minmax(0, 1fr); }
+  .activity {
+    display: none;
+  }
+  .activity.open {
+    display: flex; position: fixed; right: 0; top: 56px; bottom: 26px; width: min(340px, 92vw); z-index: 30;
+    box-shadow: -30px 0 60px -30px rgba(0, 0, 0, 0.9);
+  }
+  .crumbs { display: none; }
+  .stream { padding: 8px 14px 20px; }
+  .composer { padding: 10px 14px 12px; }
+  .thread-head { padding: 10px 14px; }
+  .statusbar .sb.opt { display: none; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .thinking i, .todo li.now .bx::after, .stream-caret { animation: none; }
+}
+
+
+
+.mini-fallback { display: none; position: absolute; left: 50%; top: 50%; width: 58%; transform: translate(-50%, -46%); opacity: 0.9; }
+.mini.no-webgl .mini-fallback { display: block; }
+
+@media (max-width: 700px) {
+  .topbar { gap: 8px; padding: 0 10px; }
+  #modelChip, #ctxChip { display: none; }
+  .topbar .brand span:last-child { font-size: 13px; }
+  .composer-bar { flex-wrap: wrap; row-gap: 6px; }
+  .composer-bar .grow { flex-basis: 100%; height: 0; }
+  .composer-hint { flex-direction: column; gap: 4px; }
+  .thread-head h1 { font-size: 12px; }
+  .tool .ar { display: none; }
+  .statusbar { gap: 10px; }
+}
+
+
+/* ---- inline build: view router + svg assets ---- */
+.view[hidden] { display: none; }
+body.on-console { overflow: hidden; height: 100dvh; }
+#view-landing { min-height: 100dvh; background: var(--bg); }
+.brand svg.mark { width: 26px; height: 26px; }
+.topbar .brand svg.mark { width: 22px; height: 22px; }
+.hero-fallback svg { position: absolute; inset: 0; width: 100%; height: 100%; }
+.cta svg.art { width: clamp(200px, 24vw, 320px); height: auto; filter: drop-shadow(0 30px 60px rgba(255, 47, 47, 0.35)); }
+.mini-fallback svg, svg.mini-fallback { width: 100%; height: 100%; }
+@media (max-width: 900px) { .cta svg.art { display: none; } }
+
+</style>
+</head>
+<body>
+
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+<symbol id="tiki-mark" viewBox="0 0 64 64"><defs>
+    <linearGradient id="m-body" x1="14" y1="10" x2="46" y2="56" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#ff5a44"/>
+      <stop offset=".55" stop-color="#ef2020"/>
+      <stop offset="1" stop-color="#8d0606"/>
+    </linearGradient>
+    <linearGradient id="m-bolt" x1="26" y1="18" x2="40" y2="44" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#fff3ec"/>
+      <stop offset="1" stop-color="#ffb07a"/>
+    </linearGradient>
+  </defs>
+  <rect x="1" y="1" width="62" height="62" rx="15" fill="#0b0b0d" stroke="#26262c" stroke-width="1.5"/>
+  <path d="M33.5 14.5c-6.8 0-11.4 4.6-12.6 10.4-.6 3.1-.2 6.4.9 9.6l3.4 9.4c.6 1.7 1.6 3.4 2.7 4.6 1.2 1.4 3 2.1 4.7 1.6 1.9-.5 3-2.2 3.4-4.1.4-1.8.2-3.9-.4-5.9l-1.4-4.6c1.6 1.1 3.4 1.7 5.3 1.7 5.4 0 9.3-4.2 9.3-10 0-7.6-5.1-12.7-15.3-12.7Z" fill="url(#m-body)"/>
+  <path d="M28.4 17.6c-1.9 2.2-2.9 5-3 8.1" stroke="#ff9d7a" stroke-width="2.2" stroke-linecap="round" opacity=".55" fill="none"/>
+  <path d="M33.8 14.9c3.6-1.7 6.6-1.6 9.2.1" stroke="#7f8f5c" stroke-width="3" stroke-linecap="round" fill="none"/>
+  <path d="M42.9 15c1.6-2.4 4-3.6 6.9-3.4" stroke="#7f8f5c" stroke-width="2.4" stroke-linecap="round" fill="none"/>
+  <path d="M35.4 22.6 28.6 35h5.1l-3.1 9.9 9.6-13.4h-5.6l3.4-8.9Z" fill="url(#m-bolt)"/>
+  <circle cx="27.4" cy="46.6" r="2.1" fill="#ff3b2f"/></symbol>
+<symbol id="tiki-mascot" viewBox="0 0 440 360"><defs>
+    <linearGradient id="c-body" x1="160" y1="40" x2="270" y2="300" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#ff6a4a"/>
+      <stop offset=".45" stop-color="#f02424"/>
+      <stop offset="1" stop-color="#99070a"/>
+    </linearGradient>
+    <linearGradient id="c-limb" x1="150" y1="180" x2="230" y2="300" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#e02020"/>
+      <stop offset="1" stop-color="#8c0708"/>
+    </linearGradient>
+    <linearGradient id="c-speed" x1="10" y1="0" x2="150" y2="0" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#ff2f2f" stop-opacity="0"/>
+      <stop offset="1" stop-color="#ff5a3c" stop-opacity=".85"/>
+    </linearGradient>
+    <radialGradient id="c-glow" cx=".5" cy=".5" r=".5">
+      <stop offset="0" stop-color="#ff2b2b" stop-opacity=".55"/>
+      <stop offset="1" stop-color="#ff2b2b" stop-opacity="0"/>
+    </radialGradient>
+    <linearGradient id="c-lens" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#fff6ef"/>
+      <stop offset="1" stop-color="#ffb9a1"/>
+    </linearGradient>
+  </defs>
+
+  <circle cx="235" cy="185" r="165" fill="url(#c-glow)" opacity=".75"/>
+
+  <g opacity=".16" fill="#ff2f2f">
+    <path d="M150 108c-24 24-30 64-20 100 9 32 32 64 60 80 14-30 20-66 16-102-4-38-20-68-40-78Z" transform="translate(-70 4)"/>
+    <path d="M150 108c-24 24-30 64-20 100 9 32 32 64 60 80 14-30 20-66 16-102-4-38-20-68-40-78Z" transform="translate(-36 2)" opacity=".7"/>
+  </g>
+
+  <g stroke="url(#c-speed)" stroke-width="4" stroke-linecap="round" fill="none">
+    <path d="M22 132h84" opacity=".55"/>
+    <path d="M8 168h128" opacity=".9"/>
+    <path d="M30 204h92" opacity=".7"/>
+    <path d="M14 240h116" opacity=".5"/>
+    <path d="M44 276h72" opacity=".35"/>
+  </g>
+
+  <g transform="translate(232 186) rotate(-7)">
+    <g fill="url(#c-limb)">
+      <path d="M-30 24c-20 14-30 34-26 52" stroke="url(#c-limb)" stroke-width="18" stroke-linecap="round" fill="none"/>
+      <path d="M36 -18c18-10 30-6 38 6" stroke="url(#c-limb)" stroke-width="16" stroke-linecap="round" fill="none"/>
+    </g>
+
+    <g stroke="url(#c-limb)" stroke-width="19" stroke-linecap="round" fill="none">
+      <path d="M-6 62c-16 14-28 22-38 34"/>
+      <path d="M20 58c18 10 26 22 30 40"/>
+    </g>
+
+    <g fill="#141418" stroke="#000" stroke-width="0">
+      <rect x="-50" y="94" width="34" height="15" rx="7" transform="rotate(-16 -33 101)"/>
+      <rect x="40" y="94" width="36" height="15" rx="7" transform="rotate(12 58 101)"/>
+    </g>
+    <g fill="#ff2f2f">
+      <rect x="-50" y="104" width="34" height="5" rx="2.5" transform="rotate(-16 -33 106)" opacity=".9"/>
+      <rect x="40" y="104" width="36" height="5" rx="2.5" transform="rotate(12 58 106)" opacity=".9"/>
+    </g>
+
+    <path d="M-12 -88c-26 26-33 68-22 106 10 34 33 68 62 86 16-32 23-70 18-108-5-40-22-74-42-84Z" fill="url(#c-body)"/>
+    <path d="M-12 -88c-18 20-26 48-24 78" stroke="#ffa083" stroke-width="6" stroke-linecap="round" opacity=".45" fill="none"/>
+    <path d="M-4 -90c-8 34-4 70 8 100" stroke="#7d0406" stroke-width="4" stroke-linecap="round" opacity=".35" fill="none"/>
+    <path d="M14 -78c-4 32 2 66 16 94" stroke="#7d0406" stroke-width="4" stroke-linecap="round" opacity=".28" fill="none"/>
+
+    <path d="M-10 -86c2-16 14-26 32-28" stroke="#7f8f5c" stroke-width="9" stroke-linecap="round" fill="none"/>
+    <path d="M22 -114c14-10 30-10 44 0-14 12-30 12-44 0Z" fill="#8fa06a"/>
+    <path d="M22 -114c14-10 30-10 44 0" stroke="#5f6f45" stroke-width="3" fill="none" stroke-linecap="round"/>
+
+    <g>
+      <rect x="-34" y="-52" width="34" height="26" rx="11" fill="url(#c-lens)" stroke="#7d0406" stroke-width="3"/>
+      <rect x="4" y="-56" width="34" height="26" rx="11" fill="url(#c-lens)" stroke="#7d0406" stroke-width="3"/>
+      <rect x="-1" y="-44" width="8" height="8" rx="3" fill="#7d0406"/>
+      <circle cx="-17" cy="-39" r="5.5" fill="#141418"/>
+      <circle cx="21" cy="-43" r="5.5" fill="#141418"/>
+      <circle cx="-19" cy="-41" r="1.8" fill="#fff"/>
+      <circle cx="19" cy="-45" r="1.8" fill="#fff"/>
+    </g>
+
+    <path d="M-12 -12c8 6 18 4 24-4" stroke="#5f0203" stroke-width="4" stroke-linecap="round" fill="none" opacity=".7"/>
+
+    <path d="M-2 4 14 4 8 16 -6 16Z" fill="#ffd9a8" opacity=".9"/>
+    <path d="M-2 4 14 4 8 16 -6 16Z" fill="none" stroke="#ff8a5c" stroke-width="1.5" opacity=".7"/>
+  </g>
+
+  <g fill="#ff2f2f" opacity=".9">
+    <path d="M112 86l-10 20h9l-6 16 16-22h-9l6-14Z"/>
+    <path d="M330 262l-8 16h7l-5 13 13-18h-7l5-11Z" opacity=".7"/>
+  </g>
+
+  <g fill="#3a0a0a" opacity=".5">
+    <circle cx="150" cy="318" r="9"/>
+    <circle cx="186" cy="326" r="6"/>
+    <circle cx="122" cy="330" r="5"/>
+    <circle cx="330" cy="322" r="7"/>
+  </g></symbol>
+</svg>
+
+<div class="landing view" id="view-landing">
+<header class="nav">
+  <a class="brand" href="#/">
+    <svg class="mark" aria-hidden="true"><use href="#tiki-mark"/></svg>
+    <span>tiki<b>_</b>agent</span>
+    <span class="slash">/</span>
+    <span class="muted" style="font-weight:400;font-size:12px;letter-spacing:.02em">security</span>
+  </a>
+  <nav class="nav-links">
+    <a href="#engine">engine</a>
+    <a href="#live">live activity</a>
+    <a href="#pipeline">pipeline</a>
+    <a href="#/console">console</a>
+  </nav>
+  <div class="nav-right">
+    <span class="status-pill"><span class="dot ok"></span> <b>all systems</b> · 12ms p50</span>
+    <a class="btn btn-primary" href="#/console" style="height:36px;padding:0 14px;font-size:12px">open console</a>
+  </div>
+</header>
+
+<main>
+  <section class="hero" id="top">
+    <canvas class="hero-canvas" id="hero-ascii" aria-hidden="true"></canvas>
+    <div class="hero-fallback" aria-hidden="true">
+      <svg class="fb-ghost g2 art" aria-hidden="true"><use href="#tiki-mascot"/></svg>
+      <svg class="fb-ghost g1 art" aria-hidden="true"><use href="#tiki-mascot"/></svg>
+      <svg class="fb-run art" aria-hidden="true"><use href="#tiki-mascot"/></svg>
+    </div>
+    <div class="hero-scrim"></div>
+
+    <div class="hero-hud" aria-hidden="true">
+      <div class="hud-chip"><span class="dot"></span> runner <b>0.27s</b> ahead</div>
+      <div class="hud-chip">tool.bash <b>41ms</b> <span class="bar"><i></i></span></div>
+      <div class="hud-chip">chain <b>recon → exploit</b></div>
+    </div>
+
+    <div class="hero-body">
+      <div class="hero-copy">
+        <span class="tag"><span class="dot"></span> v1.0 — flash runtime</span>
+        <h1>Security at the<br />speed of <span class="hot">flash.</span></h1>
+        <p class="sub">
+          tiki is a web-native security agent for pentest and code review. It recons, fingerprints,
+          chains exploits and writes the report in one live thread — <em>every tool call in the open</em>,
+          no spinner tax, no setup.
+        </p>
+        <div class="hero-cta">
+          <a class="btn btn-primary" href="#/console">
+            launch console
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
+          </a>
+          <a class="btn btn-ghost" href="#engine">read the engine</a>
+        </div>
+        <div class="hero-meta">
+          <span><i></i> no install</span>
+          <span><i></i> runs real tools</span>
+          <span><i></i> audit log by default</span>
+        </div>
+
+        <div class="term-card" aria-hidden="true">
+          <div class="term-head">
+            <span class="dots"><i></i><i></i><i></i></span>
+            <span>~/engagements/acme-core</span>
+            <span class="grow"></span>
+            <span class="live"><span class="dot"></span> live</span>
+          </div>
+          <div class="term-body" id="heroTerm"></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <div class="ticker" aria-hidden="true">
+    <div class="ticker-track" id="ticker">
+      <span><b>recon</b> nmap · ffuf · subfinder</span>
+      <span><b>fingerprint</b> nuclei · whatweb</span>
+      <span><b>exploit</b> sqlmap · custom payloads</span>
+      <span><b>verify</b> headless browser</span>
+      <span><b>report</b> severity ranked · patched</span>
+      <span><b>stream</b> every tool call in the open</span>
+    </div>
+  </div>
+
+  <section class="section" id="engine">
+    <div class="wrap">
+      <div class="section-head reveal">
+        <span class="sec-label">the engine</span>
+        <h2>Built for the first <span>60 seconds</span> of an engagement.</h2>
+        <p>Most agents stall between steps. tiki keeps the loop tight: plan, run, read, patch — in one pass, on the same thread you are watching.</p>
+      </div>
+
+      <div class="features reveal">
+        <article class="card">
+          <span class="idx">01</span>
+          <span class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M13 2 4 14h6l-1 8 9-12h-6l1-8Z"/></svg></span>
+          <h3>Flash runtime</h3>
+          <p>Median tool round-trip of 41ms. The agent never waits on a spinner it could have skipped — output streams as it lands.</p>
+        </article>
+        <article class="card">
+          <span class="idx">02</span>
+          <span class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12h4l2 6 3-14 2 8h7"/></svg></span>
+          <h3>Live agent activity</h3>
+          <p>Steps, subagents, token burn and the current tool call are on screen. Nothing runs off-camera.</p>
+        </article>
+        <article class="card">
+          <span class="idx">03</span>
+          <span class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2 4 6v6c0 5 3.4 8.6 8 10 4.6-1.4 8-5 8-10V6l-8-4Z"/><path d="m9 12 2 2 4-4"/></svg></span>
+          <h3>Pentest native</h3>
+          <p>Nmap, ffuf, nuclei, sqlmap, headless browsers and Burp exports. tiki drives real tooling, not a chat window.</p>
+        </article>
+        <article class="card">
+          <span class="idx">04</span>
+          <span class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="14" rx="2"/><path d="M7 21h10M9 8l-2 2 2 2M15 8l2 2-2 2"/></svg></span>
+          <h3>Browser, not a terminal</h3>
+          <p>Workspace tree, patch view, terminal and thread in one tab. Same session on the plane and on the box.</p>
+        </article>
+        <article class="card">
+          <span class="idx">05</span>
+          <span class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 2h9l5 5v15H6z"/><path d="M15 2v5h5M9 13h6M9 17h4"/></svg></span>
+          <h3>Findings, not logs</h3>
+          <p>Each run closes with a severity-ranked report, raw request/response pairs and a patch you can apply.</p>
+        </article>
+        <article class="card">
+          <span class="idx">06</span>
+          <span class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2v4M12 18v4M2 12h4M18 12h4"/><circle cx="12" cy="12" r="4.5"/></svg></span>
+          <h3>Zero setup</h3>
+          <p>Open the tab, paste a scope, pick a profile. The chain spawns itself — recon to proof in one run.</p>
+        </article>
+      </div>
+
+      <div class="stats reveal" style="margin-top:26px">
+        <div class="stat"><b>41<i>ms</i></b><span>median tool round-trip</span></div>
+        <div class="stat"><b>0.4<i>s</i></b><span>plan to first tool call</span></div>
+        <div class="stat"><b>24<i>k</i></b><span>CVE + technique index</span></div>
+        <div class="stat"><b>100<i>%</i></b><span>tool calls streamed live</span></div>
+      </div>
+    </div>
+  </section>
+
+  <section class="section" id="live">
+    <div class="wrap">
+      <div class="lab">
+        <div class="lab-copy reveal">
+          <span class="sec-label">live activity</span>
+          <h2>You can watch every step it takes.</h2>
+          <p>The right rail is the run: current tool, elapsed time, files touched, subagents in flight and the exact command on the wire. If tiki stalls, you see where — not after the fact in a log file.</p>
+          <ul class="lab-list">
+            <li><b>01</b> tool call, argument and exit status in real time</li>
+            <li><b>02</b> subagents spawn, report and merge on screen</li>
+            <li><b>03</b> diffs render as they are written</li>
+            <li><b>04</b> kill switch stops the run inside one frame</li>
+          </ul>
+        </div>
+
+        <div class="panel reveal" style="--d:120ms">
+          <div class="panel-head">
+            <span class="rec"><span class="dot"></span> agent.activity</span>
+            <span class="grow"></span>
+            <span>session tk-8842</span>
+          </div>
+          <div class="panel-body" id="labFeed"></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="section" id="pipeline">
+    <div class="wrap">
+      <div class="section-head reveal">
+        <span class="sec-label">pipeline</span>
+        <h2>One thread. <span>Five phases.</span> No handoff.</h2>
+        <p>tiki runs the engagement end to end and keeps the evidence chain intact between phases.</p>
+      </div>
+      <div class="flow reveal">
+        <div class="flow-step"><span class="n">01</span><h4>Scope</h4><p>Targets, auth, rules of engagement and a hard budget in tokens and wall clock.</p></div>
+        <div class="flow-step"><span class="n">02</span><h4>Recon</h4><p>Subdomains, ports, services, content discovery, JS surface and secrets.</p></div>
+        <div class="flow-step"><span class="n">03</span><h4>Fingerprint</h4><p>Stack, versions, CVE match, framework quirks and auth model.</p></div>
+        <div class="flow-step"><span class="n">04</span><h4>Exploit</h4><p>Payload build, chain, proof of impact and a clean revert path.</p></div>
+        <div class="flow-step"><span class="n">05</span><h4>Report</h4><p>Severity ranked findings, request/response pairs and fixes as patches.</p></div>
+      </div>
+    </div>
+  </section>
+
+  <section class="section" style="border-top:0;padding-top:0">
+    <div class="wrap">
+      <div class="cta reveal">
+        <div>
+          <span class="sec-label">ready</span>
+          <h2 style="margin-top:14px">Point tiki at a scope.<br />Watch it finish.</h2>
+          <p>Open the console, paste a target and pick a profile. First tool call lands in under half a second.</p>
+          <div class="actions">
+            <a class="btn btn-primary" href="#/console">launch console</a>
+            <a class="btn btn-ghost" href="#top">back to top ↑</a>
+          </div>
+        </div>
+        <svg class="art" aria-hidden="true"><use href="#tiki-mascot"/></svg>
+      </div>
+    </div>
+  </section>
+</main>
+
+<footer class="footer">
+  <div class="wrap">
+    <div class="footer-grid">
+      <div>
+        <a class="brand" href="#/">
+          <svg class="mark" aria-hidden="true"><use href="#tiki-mark"/></svg>
+          <span>tiki<b>_</b>agent</span>
+        </a>
+        <p class="blurb">A chili with a lightning bolt and a shell. Web-native security agent for people who would rather watch the chain than read a log.</p>
+      </div>
+      <div>
+        <h4>product</h4>
+        <ul>
+          <li><a href="#/console">console</a></li>
+          <li><a href="#live">live activity</a></li>
+          <li><a href="#pipeline">pipeline</a></li>
+          <li><a href="#engine">engine</a></li>
+        </ul>
+      </div>
+      <div>
+        <h4>engine</h4>
+        <ul>
+          <li><a href="#engine">flash runtime</a></li>
+          <li><a href="#engine">tools</a></li>
+          <li><a href="#engine">reports</a></li>
+          <li><a href="#engine">audit log</a></li>
+        </ul>
+      </div>
+      <div>
+        <h4>resources</h4>
+        <ul>
+          <li><a href="#/console">quickstart</a></li>
+          <li><a href="#/console">keybinds</a></li>
+          <li><a href="#/console">status</a></li>
+          <li><a href="#/console">changelog</a></li>
+        </ul>
+      </div>
+    </div>
+    <div class="footer-wordmark" aria-hidden="true">TIKI<b>_</b></div>
+    <div class="footer-bottom">
+      <span>© 2026 tiki agent — studio kerta</span>
+      <span>built with a chili, not a committee</span>
+    </div>
+  </div>
+</footer>
+</div>
+
+<div class="app view" id="view-app" hidden>
+<header class="topbar">
+  <a class="brand" href="#/" title="back to landing">
+    <svg class="mark" aria-hidden="true"><use href="#tiki-mark"/></svg>
+    <span>tiki<b>_</b>agent</span>
+  </a>
+  <div class="crumbs">
+    <span>workspace</span>
+    <span class="sep">/</span>
+    <b>acme-core</b>
+    <span class="sep">/</span>
+    <span>tk-8842</span>
+    <span class="modified">● 3 files changed</span>
+  </div>
+  <div class="grow"></div>
+
+  <button class="chip" id="modelChip" title="switch model">
+    <span class="k">model</span> <b>tiki-v3 · flash</b>
+  </button>
+  <button class="chip" id="ctxChip" title="context used">
+    <span class="k">ctx</span> <b id="ctxVal">26%</b>
+  </button>
+  <button class="chip agent-pill" id="agentPill"><span class="dot"></span> <span id="agentPillText">running</span></button>
+  <button class="icon-btn" id="railBtn" title="workspace">
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 6h16M4 12h16M4 18h10"/></svg>
+  </button>
+  <button class="icon-btn" id="actBtn" title="activity">
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M3 12h4l2 6 3-14 2 8h7"/></svg>
+  </button>
+</header>
+
+<div class="shell">
+  <aside class="rail" id="rail">
+    <div class="rail-block">
+      <div class="rail-head"><span>sessions</span><button title="new session">+</button></div>
+      <div id="sessionList">
+        <div class="session active"><span class="dot"></span> auth bypass → rce <span class="meta">now</span></div>
+        <div class="session"><span class="dot"></span> api surface review <span class="meta">2h</span></div>
+        <div class="session"><span class="dot"></span> subdomain sweep <span class="meta">1d</span></div>
+        <div class="session"><span class="dot"></span> s3 bucket audit <span class="meta">3d</span></div>
+      </div>
+    </div>
+
+    <div class="rail-block scroll">
+      <div class="rail-head"><span>workspace</span><button title="collapse">–</button></div>
+      <div class="tree">
+        <div class="tree-row folder"><span class="fav">▾</span> engagements/acme-core</div>
+        <div class="tree-row folder"><span class="fav">▾</span> &nbsp;recon</div>
+        <div class="tree-row"><span class="fav">·</span> &nbsp;&nbsp;hosts.txt</div>
+        <div class="tree-row"><span class="fav">·</span> &nbsp;&nbsp;nmap.xml</div>
+        <div class="tree-row folder"><span class="fav">▾</span> &nbsp;src</div>
+        <div class="tree-row"><span class="fav">·</span> &nbsp;&nbsp;auth/session.ts<span class="mod"></span></div>
+        <div class="tree-row active"><span class="fav">·</span> &nbsp;&nbsp;api/v2/user.ts<span class="mod"></span></div>
+        <div class="tree-row"><span class="fav">·</span> &nbsp;&nbsp;middleware/cors.ts</div>
+        <div class="tree-row folder"><span class="fav">▸</span> &nbsp;reports</div>
+        <div class="tree-row"><span class="fav">·</span> &nbsp;&nbsp;scope.yaml</div>
+        <div class="tree-row"><span class="fav">·</span> &nbsp;&nbsp;tiki.toml<span class="add"></span></div>
+      </div>
+    </div>
+
+    <div class="rail-foot">
+      <svg aria-hidden="true"><use href="#tiki-mark"/></svg>
+      <div class="nm">tiki<span>flash runtime · v1.0</span></div>
+    </div>
+  </aside>
+
+  <section class="chat">
+    <div class="thread-head">
+      <h1>auth bypass → rce</h1>
+      <span class="sev">critical</span>
+      <span class="tool-mini">4 hosts · 2 authenticated</span>
+      <span class="grow"></span>
+      <button class="btn btn-quiet" id="stopBtn" style="height:26px;font-size:10.5px;border:1px solid #2a2a33;padding:0 9px">stop</button>
+      <button class="btn btn-quiet" id="exportBtn" style="height:26px;font-size:10.5px">export report</button>
+    </div>
+
+    <div class="stream" id="stream" aria-live="polite"></div>
+
+    <div class="composer">
+      <div class="composer-box">
+        <textarea id="input" rows="1" placeholder="ask tiki to recon, exploit, patch or explain — ⏎ to send"></textarea>
+        <div class="composer-bar">
+          <button class="pchip on" data-profile="deep">deep</button>
+          <button class="pchip" data-profile="recon">recon</button>
+          <button class="pchip" data-profile="exploit">exploit</button>
+          <button class="pchip" id="attachBtn">+ attach</button>
+          <span class="grow"></span>
+          <button class="send" id="sendBtn">
+            run
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
+          </button>
+        </div>
+      </div>
+      <div class="composer-hint">
+        <span><kbd>⏎</kbd> send · <kbd>⇧⏎</kbd> newline · <kbd>⌘K</kbd> palette · <kbd>/</kbd> focus</span>
+        <span id="budgetHint">budget 200k tokens</span>
+      </div>
+    </div>
+  </section>
+
+  <aside class="activity" id="activity">
+    <div class="act-head">
+      <span class="rec"><span class="dot"></span> live agent activity</span>
+      <span class="grow"></span>
+      <span class="time" id="elapsed">00:00</span>
+    </div>
+
+    <div class="mini">
+      <canvas id="mini-ascii" aria-hidden="true"></canvas>
+      <svg class="mini-fallback art" aria-hidden="true"><use href="#tiki-mascot"/></svg>
+      <span class="mini-label">tiki · runner</span>
+      <span class="mini-state"><span class="dot"></span> <span id="miniState">idle</span></span>
+      <div class="mini-foot"><span>speed <b id="speedVal">0.0×</b></span><span>step <b id="stepVal">1</b></span></div>
+    </div>
+
+    <div class="act-sec">
+      <h5>current step</h5>
+      <div class="now">
+        <div class="row1"><span class="tool" id="nowTool">tool.bash</span><span id="nowDesc">idle</span><span class="elapsed" id="nowElapsed">—</span></div>
+        <div class="cmd" id="nowCmd">waiting for instructions</div>
+        <div class="progress"><i id="progBar"></i></div>
+      </div>
+    </div>
+
+    <div class="act-sec">
+      <h5>run <span id="runState">streaming</span></h5>
+      <div class="metrics">
+        <div><b id="mTok">0</b><span>tok/s</span></div>
+        <div><b id="mTools">0</b><span>tool calls</span></div>
+        <div><b id="mLat">41ms</b><span>p50 latency</span></div>
+        <div><b id="mCtx">26%</b><span>context</span></div>
+      </div>
+    </div>
+
+    <div class="act-sec">
+      <h5>plan <span id="planCount">2 / 6</span></h5>
+      <ul class="todo" id="todo">
+        <li class="done"><span class="bx">✓</span> map scope + auth surface</li>
+        <li class="done"><span class="bx">✓</span> recon 10.0.4.0/24</li>
+        <li class="now"><span class="bx"></span> confirm idor on /api/v2/user</li>
+        <li><span class="bx"></span> chain to admin token</li>
+        <li><span class="bx"></span> prove impact + revert</li>
+        <li><span class="bx"></span> write report + patches</li>
+      </ul>
+    </div>
+
+    <div class="act-sec">
+      <h5>subagents <span id="subCount">2 running</span></h5>
+      <div class="agent-row"><span class="nm">recon-web</span><span class="bar"><i style="width:72%"></i></span><span class="pc">72%</span></div>
+      <div class="agent-row"><span class="nm">exploit-chain</span><span class="bar"><i style="width:38%"></i></span><span class="pc">38%</span></div>
+      <div class="agent-row"><span class="nm">report-writer</span><span class="bar"><i style="width:8%"></i></span><span class="pc">8%</span></div>
+    </div>
+
+    <div class="act-sec">
+      <h5>event log <span>last 40</span></h5>
+      <div class="log" id="log"></div>
+    </div>
+  </aside>
+</div>
+
+<footer class="statusbar">
+  <span class="sb"><span class="dot ok"></span> connected <b id="wsInfo">ws://127.0.0.1:4317</b></span>
+  <span class="sb opt">session <b>tk-8842</b></span>
+  <span class="sb opt">model <b>tiki-v3 · flash</b></span>
+  <span class="grow"></span>
+  <span class="sb opt"><span class="ok">●</span> tools sandboxed</span>
+  <span class="sb">⌘K commands</span>
+</footer>
+
+<div class="palette" id="palette" hidden>
+  <div class="pal-box" role="dialog" aria-label="command palette">
+    <input class="pal-input" id="palInput" placeholder="type a command…" autocomplete="off" spellcheck="false" />
+    <ul class="pal-list" id="palList"></ul>
+    <div class="pal-empty" id="palEmpty" hidden>no matching command</div>
+  </div>
+</div>
+</div>
+
+<script>
+/* ============================================================
+   tiki ascii engine — WebGL2
+   scene pass (1 texel per char cell) -> glyph pass (atlas)
+   glyph atlas is generated at runtime from tiki's own ramp.
+   usage:
+     TikiAscii(canvas, { scene: GLSL string defining
+       vec4 renderScene(vec2 uv, vec2 res), cell: 11 })
+   ============================================================ */
+(() => {
+  const TIKI_RAMP = " .·:-=+*xoX#%&@";
+
+  const VERT = `#version 300 es
+  in vec2 p;
+  void main(){ gl_Position = vec4(p, 0.0, 1.0); }`;
+
+  const COMMON = `#version 300 es
+  precision highp float;
+  uniform vec2  r;      // render resolution (cells)
+  uniform vec2  R;      // canvas resolution (px)
+  uniform float t;      // seconds
+  uniform vec2  m;      // pointer 0..1
+  uniform float uAct;   // activity 0..1
+  uniform float uStyle; // 0 = hero, 1 = compact
+  uniform sampler2D prev;
+  out vec4 o;
+  %SCENE%
+  void main(){
+    vec2 uv = gl_FragCoord.xy / r;
+    o = renderScene(uv, r);
+  }`;
+
+  const GLYPH = `#version 300 es
+  precision highp float;
+  uniform sampler2D sc;
+  uniform sampler2D at;
+  uniform vec2  R;
+  uniform vec2  G;   // cols, rows
+  uniform float NG;
+  uniform float CW;
+  uniform float CH;
+  uniform float t;
+  uniform float uStyle;
+  out vec4 o;
+
+  float h21(vec2 p){ p = fract(p * vec2(123.34, 456.21)); p += dot(p, p + 45.32); return fract(p.x * p.y); }
+
+  void main(){
+    vec2 px = vec2(gl_FragCoord.x, R.y - gl_FragCoord.y);
+    vec2 cell = floor(px / vec2(CW, CH));
+    vec2 f = fract(px / vec2(CW, CH));
+
+    vec4 s = texelFetch(sc, ivec2(int(cell.x), int(G.y - 1.0 - cell.y)), 0);
+    float L = clamp(s.a, 0.0, 1.0);
+
+    // a light scatter so the field breathes instead of looking like a still
+    float j = h21(cell + floor(t * 7.0));
+    float idx = floor(L * (NG - 1.0));
+    if (L > 0.02) {
+      if (j > 0.994) idx = min(NG - 1.0, idx + 1.0);
+      else if (j < 0.006) idx = max(0.0, idx - 1.0);
+    }
+
+    float g = texture(at, vec2((idx + clamp(f.x, 0.02, 0.98)) / NG, f.y)).r;
+    // faint sub-cell glow so edges are not aliased blocks
+    float glyph = clamp(g, 0.0, 1.0);
+    vec3 c = s.rgb * glyph;
+    // scanline + vignette in the engine so both pages share the look
+    float scan = 0.92 + 0.08 * sin(px.y * 1.6);
+    c *= scan;
+    o = vec4(c, 1.0);
+  }`;
+
+  function compile(gl, type, src) {
+    const sh = gl.createShader(type);
+    gl.shaderSource(sh, src);
+    gl.compileShader(sh);
+    if (!gl.getShaderParameter(sh, gl.COMPILE_STATUS)) {
+      const log = gl.getShaderInfoLog(sh);
+      console.error("[tiki-ascii] shader:\n" + log + "\n" + src.split("\n").map((l, i) => (i + 1) + "  " + l).join("\n"));
+      gl.deleteShader(sh);
+      return null;
+    }
+    return sh;
+  }
+
+  function program(gl, vsSrc, fsSrc) {
+    const vs = compile(gl, gl.VERTEX_SHADER, vsSrc);
+    const fs = compile(gl, gl.FRAGMENT_SHADER, fsSrc);
+    if (!vs || !fs) return null;
+    const p = gl.createProgram();
+    gl.attachShader(p, vs);
+    gl.attachShader(p, fs);
+    gl.bindAttribLocation(p, 0, "p");
+    gl.linkProgram(p);
+    if (!gl.getProgramParameter(p, gl.LINK_STATUS)) {
+      console.error("[tiki-ascii] link: " + gl.getProgramInfoLog(p));
+      return null;
+    }
+    return p;
+  }
+
+  function makeAtlas(gl, ramp, cellW, cellH) {
+    const n = ramp.length;
+    const cv = document.createElement("canvas");
+    cv.width = n * cellW;
+    cv.height = cellH;
+    const ctx = cv.getContext("2d");
+    ctx.clearRect(0, 0, cv.width, cv.height);
+    ctx.fillStyle = "#fff";
+    ctx.textAlign = "center";
+    ctx.textBaseline = "middle";
+    ctx.font = `500 ${Math.floor(cellH * 0.92)}px "JetBrains Mono", ui-monospace, monospace`;
+    for (let i = 0; i < n; i++) {
+      ctx.fillText(ramp[i], i * cellW + cellW / 2, cellH / 2 + cellH * 0.04);
+    }
+    const tex = gl.createTexture();
+    gl.bindTexture(gl.TEXTURE_2D, tex);
+    gl.pixelStorei(gl.UNPACK_PREMULTIPLY_ALPHA_WEBGL, false);
+    gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, cv);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+    return tex;
+  }
+
+  function TikiAscii(canvas, opts = {}) {
+    const sceneSrc = opts.scene || "";
+    const cell = opts.cell || 11;
+    const still = matchMedia("(prefers-reduced-motion: reduce)").matches;
+    const gl = canvas.getContext("webgl2", {
+      antialias: false,
+      alpha: false,
+      powerPreference: "high-performance",
+      preserveDrawingBuffer: true,
+    });
+
+    if (!gl) {
+      canvas.style.background =
+        "radial-gradient(42% 46% at 62% 54%, rgba(255,47,47,.22), rgba(120,10,10,.10) 45%, transparent 72%)";
+      canvas.classList.add("ascii-off");
+      if (canvas.parentElement) canvas.parentElement.classList.add("no-webgl");
+      return { ok: false, setActivity() {}, dispose() {} };
+    }
+
+    const fsScene = COMMON.replace("%SCENE%", () => sceneSrc);
+    const P1 = program(gl, VERT, fsScene);
+    const P2 = program(gl, VERT, GLYPH);
+    if (!P1 || !P2) return { ok: false, setActivity() {}, dispose() {} };
+
+    gl.bindBuffer(gl.ARRAY_BUFFER, gl.createBuffer());
+    gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([-1, -1, 3, -1, -1, 3]), gl.STATIC_DRAW);
+    gl.enableVertexAttribArray(0);
+    gl.vertexAttribPointer(0, 2, gl.FLOAT, false, 0, 0);
+
+    const half = !!gl.getExtension("EXT_color_buffer_float");
+    let atlas = makeAtlas(gl, TIKI_RAMP, 32, 52);
+    const NG = TIKI_RAMP.length;
+
+    if (document.fonts && document.fonts.ready) {
+      document.fonts.ready.then(() => {
+        if (gl.isContextLost()) return;
+        const old = atlas;
+        atlas = makeAtlas(gl, TIKI_RAMP, 32, 52);
+        gl.deleteTexture(old);
+      }).catch(() => {});
+    }
+
+    let fbo = null, tex = null, cols = 0, rows = 0, cw = 0, ch = 0;
+
+    function alloc() {
+      if (tex) gl.deleteTexture(tex);
+      if (fbo) gl.deleteFramebuffer(fbo);
+      tex = gl.createTexture();
+      gl.bindTexture(gl.TEXTURE_2D, tex);
+      gl.texImage2D(gl.TEXTURE_2D, 0, half ? gl.RGBA16F : gl.RGBA8, cols, rows, 0, gl.RGBA,
+        half ? gl.HALF_FLOAT : gl.UNSIGNED_BYTE, null);
+      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
+      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
+      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+      fbo = gl.createFramebuffer();
+      gl.bindFramebuffer(gl.FRAMEBUFFER, fbo);
+      gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, tex, 0);
+      gl.clearColor(0, 0, 0, 0);
+      gl.clear(gl.COLOR_BUFFER_BIT);
+      gl.bindFramebuffer(gl.FRAMEBUFFER, null);
+    }
+
+    function resize() {
+      const dpr = Math.min(devicePixelRatio || 1, 2) * (opts.dpr || 1);
+      const w = Math.max(1, Math.round(canvas.clientWidth * dpr));
+      const h = Math.max(1, Math.round(canvas.clientHeight * dpr));
+      if (canvas.width !== w || canvas.height !== h) {
+        canvas.width = w;
+        canvas.height = h;
+      }
+      ch = cell * dpr;
+      cw = ch * 0.60;
+      cols = Math.max(2, Math.ceil(canvas.width / cw));
+      rows = Math.max(2, Math.ceil(canvas.height / ch));
+      alloc();
+      canvas._cw = cw;
+      canvas._ch = ch;
+    }
+
+    const U1 = (n) => gl.getUniformLocation(P1, n);
+    const U2 = (n) => gl.getUniformLocation(P2, n);
+    const u = {
+      r: U1("r"), R: U1("R"), t: U1("t"), m: U1("m"), act: U1("uAct"), style: U1("uStyle"),
+    };
+    const v = {
+      sc: U2("sc"), at: U2("at"), R: U2("R"), G: U2("G"), NG: U2("NG"),
+      CW: U2("CW"), CH: U2("CH"), t: U2("t"), style: U2("uStyle"),
+    };
+
+    let mx = 0.5, my = 0.5, tx = 0.5, ty = 0.5, activity = 0, shownAct = 0;
+    const onMove = (e) => {
+      const b = canvas.getBoundingClientRect();
+      if (!b.width) return;
+      tx = (e.clientX - b.left) / b.width;
+      ty = 1 - (e.clientY - b.top) / b.height;
+    };
+    addEventListener("pointermove", onMove, { passive: true });
+
+    let ro;
+    if ("ResizeObserver" in window) {
+      ro = new ResizeObserver(resize);
+      ro.observe(canvas);
+    }
+    addEventListener("resize", resize);
+    resize();
+
+    const style = opts.compact ? 1 : 0;
+    const t0 = performance.now();
+    let raf = 0, dead = false;
+
+    function draw(now) {
+      if (dead) return;
+      raf = requestAnimationFrame(draw);
+      if (!cols || !rows || !canvas.clientWidth || !canvas.clientHeight) return;
+
+      const time = still ? 6.0 : (now - t0) / 1000;
+      mx += (tx - mx) * 0.06;
+      my += (ty - my) * 0.06;
+      shownAct += (activity - shownAct) * 0.05;
+
+      // scene -> one texel per cell
+      gl.bindFramebuffer(gl.FRAMEBUFFER, fbo);
+      gl.viewport(0, 0, cols, rows);
+      gl.useProgram(P1);
+      gl.uniform2f(u.r, cols, rows);
+      gl.uniform2f(u.R, canvas.width, canvas.height);
+      gl.uniform1f(u.t, time);
+      gl.uniform2f(u.m, mx, my);
+      gl.uniform1f(u.act, shownAct);
+      gl.uniform1f(u.style, style);
+      gl.drawArrays(gl.TRIANGLES, 0, 3);
+
+      // cells -> glyphs
+      gl.bindFramebuffer(gl.FRAMEBUFFER, null);
+      gl.viewport(0, 0, canvas.width, canvas.height);
+      gl.useProgram(P2);
+      gl.activeTexture(gl.TEXTURE0);
+      gl.bindTexture(gl.TEXTURE_2D, tex);
+      gl.uniform1i(v.sc, 0);
+      gl.activeTexture(gl.TEXTURE1);
+      gl.bindTexture(gl.TEXTURE_2D, atlas);
+      gl.uniform1i(v.at, 1);
+      gl.uniform2f(v.R, canvas.width, canvas.height);
+      gl.uniform2f(v.G, cols, rows);
+      gl.uniform1f(v.NG, NG);
+      gl.uniform1f(v.CW, canvas._cw);
+      gl.uniform1f(v.CH, canvas._ch);
+      gl.uniform1f(v.t, time);
+      gl.uniform1f(v.style, style);
+      gl.drawArrays(gl.TRIANGLES, 0, 3);
+    }
+
+    const onContext = (e) => { e.preventDefault(); };
+    canvas.addEventListener("webglcontextlost", onContext, false);
+
+    requestAnimationFrame(draw);
+
+    return {
+      ok: true,
+      setActivity(x) { activity = Math.max(0, Math.min(1, x)); },
+      dispose() {
+        dead = true;
+        cancelAnimationFrame(raf);
+        removeEventListener("pointermove", onMove);
+        removeEventListener("resize", resize);
+        if (ro) ro.disconnect();
+        const ext = gl.getExtension("WEBGL_lose_context");
+        if (ext) ext.loseContext();
+      },
+    };
+  }
+
+  window.TIKI_RAMP = TIKI_RAMP;
+  window.TikiAscii = TikiAscii;
+})();
+
+/* ============================================================
+   tiki chili — procedural raymarched chili runner
+   feeds TikiAscii. no meshes, no textures, no external models.
+   ============================================================ */
+(() => {
+  const SCENE = `
+  float h11(float n){ return fract(sin(n * 127.1) * 43758.5453); }
+  float h21(vec2 p){ p = fract(p * vec2(123.34, 456.21)); p += dot(p, p + 45.32); return fract(p.x * p.y); }
+
+  float sdCap(vec3 p, vec3 a, vec3 b, float r){
+    vec3 pa = p - a, ba = b - a;
+    float h = clamp(dot(pa, ba) / dot(ba, ba), 0.0, 1.0);
+    return length(pa - ba * h) - r;
+  }
+  float sdEllip(vec3 p, vec3 r){
+    float k0 = length(p / r);
+    float k1 = length(p / (r * r));
+    return k0 * (k0 - 1.0) / max(k1, 1e-5);
+  }
+  vec3 toLocal(vec3 p, vec3 pos, float sc, float lean){
+    vec3 q = (p - pos) / sc;
+    float c = cos(lean), s = sin(lean);
+    return vec3(q.x * c + q.y * s, -q.x * s + q.y * c, q.z);
+  }
+
+  float spineX(float ty){ return 0.38 * sin(ty * 1.70); }
+  float spineZ(float ty){ return 0.22 * sin(ty * 2.20); }
+
+  vec2 mapChar(vec3 p, float ph){
+    vec2 res = vec2(1e5, 0.0);
+
+    float ty = clamp((p.y + 1.05) / 1.75, 0.0, 1.0);
+    float qx = p.x - spineX(ty);
+    float qz = p.z - spineZ(ty);
+    float rad = (0.016 + 0.340 * smoothstep(0.0, 0.42, ty))
+              * (1.0 - 0.42 * smoothstep(0.70, 1.0, ty));
+    float ang = atan(qz, qx);
+    rad *= 1.0 + 0.05 * sin(ang * 5.0 + ty * 2.0);
+    float dB = max(length(vec2(qx, qz)) - rad, max(-1.05 - p.y, p.y - 0.70));
+    if (dB < res.x) res = vec2(dB, 1.0);
+
+    vec3 top = vec3(spineX(0.97), 0.68, spineZ(0.97));
+    float dS = sdCap(p, top, top + vec3(0.14, 0.50, 0.05), 0.042);
+    if (dS < res.x) res = vec2(dS, 2.0);
+
+    float dL = sdEllip(p - vec3(spineX(1.0) - 0.08, 0.92, spineZ(1.0)), vec3(0.24, 0.04, 0.09));
+    if (dL < res.x) res = vec2(dL, 3.0);
+
+    for (int i = 0; i < 2; i++){
+      float k = float(i) * 3.14159265;
+      float sn = sin(ph + k);
+      float cs = cos(ph + k);
+      float side = i == 0 ? -1.0 : 1.0;
+      vec3 hip  = vec3(spineX(0.20) + 0.075 * side, -0.82, spineZ(0.20));
+      vec3 knee = hip + vec3(0.10 * sn, -0.22, 0.05 * cs);
+      vec3 foot = knee + vec3(0.24 * sn, -0.22 + 0.16 * max(0.0, -cs), 0.02);
+      float dl = min(sdCap(p, hip, knee, 0.050), sdCap(p, knee, foot, 0.040));
+      if (dl < res.x) res = vec2(dl, 4.0);
+      float df = sdCap(p, foot, foot + vec3(0.14, -0.01, 0.0), 0.058);
+      if (df < res.x) res = vec2(df, 5.0);
+    }
+    return res;
+  }
+  float traceChar(vec3 ro, vec3 rd, vec3 pos, float sc, float lean, float ph, out float mat){
+    mat = 0.0;
+    vec3 oc = ro - pos;
+    float b = dot(oc, rd);
+    float h = b * b - (dot(oc, oc) - 1.62 * sc * 1.62 * sc);
+    if (h < 0.0) return -1.0;
+    h = sqrt(h);
+    float t = max(-b - h, 0.0);
+    float tmax = -b + h;
+    for (int i = 0; i < 90; i++){
+      vec3 p = ro + rd * t;
+      vec2 r = mapChar(toLocal(p, pos, sc, lean), ph);
+      if (r.x < 0.0025) { mat = r.y; return t; }
+      t += max(r.x * 0.9, 0.001) * sc;
+      if (t > tmax) break;
+    }
+    return -1.0;
+  }
+
+  vec3 normAt(vec3 p, vec3 pos, float sc, float lean, float ph){
+    float e = 0.010;
+    float a = mapChar(toLocal(p + vec3(e, 0.0, 0.0), pos, sc, lean), ph).x;
+    float b = mapChar(toLocal(p - vec3(e, 0.0, 0.0), pos, sc, lean), ph).x;
+    float c = mapChar(toLocal(p + vec3(0.0, e, 0.0), pos, sc, lean), ph).x;
+    float d = mapChar(toLocal(p - vec3(0.0, e, 0.0), pos, sc, lean), ph).x;
+    float f = mapChar(toLocal(p + vec3(0.0, 0.0, e), pos, sc, lean), ph).x;
+    float g = mapChar(toLocal(p - vec3(0.0, 0.0, e), pos, sc, lean), ph).x;
+    return normalize(vec3(a - b, c - d, f - g));
+  }
+
+  vec4 shade(vec3 n, vec3 rd, float mat, float boost){
+    vec3 L = normalize(vec3(-0.55, 0.78, 0.72));
+    float dif = max(dot(n, L), 0.0);
+    float fill = max(dot(n, normalize(vec3(0.55, 0.10, 0.60))), 0.0) * 0.28;
+    float spec = pow(max(dot(reflect(rd, n), L), 0.0), 34.0);
+    float rim = pow(1.0 - max(dot(n, -rd), 0.0), 2.4);
+
+    vec3 base = vec3(0.95, 0.10, 0.07);
+    if (mat > 1.5 && mat < 2.5) base = vec3(0.26, 0.44, 0.22);
+    else if (mat > 2.5 && mat < 3.5) base = vec3(0.34, 0.58, 0.28);
+    else if (mat > 3.5 && mat < 4.5) base = vec3(0.78, 0.08, 0.05);
+    else if (mat > 4.5) base = vec3(1.00, 0.74, 0.48);
+
+    vec3 col = base * (0.30 + 0.75 * dif + fill)
+             + spec * vec3(1.0, 0.80, 0.64)
+             + rim * vec3(1.0, 0.26, 0.12);
+    float a = clamp(0.04 + 0.95 * dif + fill + 0.80 * rim + spec * 0.85, 0.0, 1.0) * boost;
+    return vec4(col, a);
+  }
+  vec4 renderScene(vec2 uv, vec2 res){
+    float A = (res.x / res.y) * 0.60;
+    vec2 cen = mix(vec2(0.700, 0.520), vec2(0.5, 0.5), uStyle);
+    vec2 sp = (uv - cen) * vec2(A, 1.0);
+
+    vec3 ro = vec3(0.0, 0.02, 4.2);
+    vec3 rd = normalize(vec3(sp * mix(1.0, 0.70, uStyle) + (m - 0.5) * 0.12, -2.55));
+
+    float glow = 0.045 * exp(-dot(sp, sp) * 11.0);
+    float streak = 0.0;
+    for (int i = 0; i < 6; i++){
+      float fi = float(i);
+      float yy = 0.10 + 0.80 * h11(fi * 3.7 + 1.3);
+      float vx = 0.55 + 0.85 * h11(fi * 7.1);
+      float x = fract(uv.x * 1.15 - t * vx * (0.55 + uAct) + h11(fi * 5.3));
+      float len = 0.03 + 0.11 * h11(fi * 9.9);
+      float w = 0.0016 + 0.0022 * h11(fi * 2.1);
+      streak += smoothstep(w, 0.0, abs(uv.y - yy))
+              * smoothstep(0.0, 0.012, x)
+              * smoothstep(len, 0.008, x);
+    }
+    vec3 col = vec3(1.0, 0.27, 0.15) * (glow * 0.5 + streak * 0.30);
+    float alpha = clamp(glow * 0.75 + streak * 0.34, 0.0, 0.5);
+
+    float run = 10.5 + 11.0 * uAct;
+    float ph = t * run;
+    float bob = sin(t * 15.0) * 0.035 * (0.7 + uAct);
+    vec3 pos = vec3(0.0, bob, 0.0);
+    float sc = mix(0.58, 0.52, uStyle);
+    float lean = 0.16 + 0.04 * uAct;
+    float best = 0.0;
+
+    for (int g = 3; g >= 0; g--){
+      float fg = float(g);
+      vec3 gp = pos - vec3(fg * 0.26, 0.0, 0.0);
+      float gsc = sc * (1.0 - fg * 0.015);
+      float gph = ph - fg * 0.26 * (1.0 + uAct);
+      float boost = g == 0 ? 1.0 : (0.50 / (1.0 + fg * 1.15));
+      float mh = 0.0;
+      float hit = traceChar(ro, rd, gp, gsc, lean, gph, mh);
+      if (hit > 0.0){
+        vec3 p = ro + rd * hit;
+        vec3 n = normAt(p, gp, gsc, lean, gph);
+        vec4 s = shade(n, rd, mh, boost);
+        if (s.a > best){
+          best = s.a;
+          col = s.rgb * (g == 0 ? 1.0 : 0.86);
+        }
+      }
+    }
+
+    return vec4(pow(max(col, vec3(0.0)), vec3(0.92)), clamp(max(alpha, best), 0.0, 1.0));
+  }
+  `;
+
+  window.TIKI_SCENE = SCENE;
+})();
+
+/* landing page — hero runner, terminal, lab feed, reveal */
+(() => {
+  const reduce = matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+  // ---- hero ascii runner
+  const canvas = document.getElementById("hero-ascii");
+  let runner = null;
+  if (canvas && window.TikiAscii && window.TIKI_SCENE) {
+    runner = TikiAscii(canvas, { scene: window.TIKI_SCENE, cell: 11 });
+  }
+
+  // ---- terminal
+  const term = document.getElementById("heroTerm");
+  const LINES = [
+    { p: "$ ", t: "tiki run --scope acme-core --profile deep", c: "cmd" },
+    { p: "→ ", t: "planner  4 hosts · 2 authenticated · budget 200k", c: "dim" },
+    { p: "✓ ", t: "recon    nmap 10.0.4.0/24              2.1s", c: "ok" },
+    { p: "✓ ", t: "fuzz     ffuf /api/*                    0.9s", c: "ok" },
+    { p: "! ", t: "finding  auth bypass @ /api/v2/user", c: "hl" },
+    { p: "→ ", t: "chain    idor → admin token → rce", c: "dim" },
+    { p: "✓ ", t: "report   reports/acme-core.md          0.3s", c: "ok" },
+  ];
+
+  const esc = (s) => s.replace(/&/g, "&amp;").replace(/</g, "&lt;");
+
+  if (term) {
+    if (reduce) {
+      term.innerHTML = LINES.map((l) => `<span class="${l.c}">${esc(l.p + l.t)}</span>`).join("\n");
+    } else {
+      let li = 0, ci = 0, done = "";
+      const step = () => {
+        if (li >= LINES.length) {
+          term.innerHTML = done + '<span class="caret"></span>';
+          setTimeout(() => { li = 0; ci = 0; done = ""; step(); }, 5200);
+          return;
+        }
+        const line = LINES[li];
+        ci++;
+        const partial = esc(line.t.slice(0, ci));
+        term.innerHTML = done + `<span class="${line.c}">${esc(line.p)}${partial}</span><span class="caret"></span>`;
+        if (ci >= line.t.length) {
+          done += `<span class="${line.c}">${esc(line.p + line.t)}</span>\n`;
+          li++; ci = 0;
+          setTimeout(step, li === 1 ? 420 : 120);
+        } else {
+          setTimeout(step, li === 0 ? 38 : 9);
+        }
+      };
+      setTimeout(step, 700);
+    }
+  }
+
+  // ---- ticker: duplicate the half so -50% loops seamlessly
+  const ticker = document.getElementById("ticker");
+  if (ticker) ticker.innerHTML += ticker.innerHTML;
+
+  // ---- lab feed
+  const feed = document.getElementById("labFeed");
+  const TOOLS = [
+    ["tool.bash", "nmap -sV -p- 10.0.4.12", "done"],
+    ["tool.grep", "\"password\\s*=\" src/**", "done"],
+    ["subagent", "recon-web · 3 hosts queued", "run"],
+    ["tool.browser", "GET /api/v2/user?id=1", "done"],
+    ["tool.edit", "patch auth/session.ts +12 −3", "done"],
+    ["tool.bash", "ffuf -w raft -u /api/FUZZ", "run"],
+    ["subagent", "exploit-chain · payload build", "run"],
+    ["tool.report", "severity: critical · 2 high", "done"],
+    ["tool.bash", "curl -X POST /api/v2/login", "done"],
+    ["tool.browser", "verify token scope → admin", "done"],
+  ];
+  const stamp = () => {
+    const d = new Date();
+    return [d.getHours(), d.getMinutes(), d.getSeconds()].map((n) => String(n).padStart(2, "0")).join(":");
+  };
+
+  if (feed) {
+    let i = 0;
+    const push = () => {
+      const [tool, arg, st] = TOOLS[i % TOOLS.length];
+      i++;
+      const row = document.createElement("div");
+      row.className = "act-row" + (st === "run" ? " busy" : "");
+      row.innerHTML =
+        `<span class="t">${stamp()}</span>` +
+        `<span class="tool">${tool}</span>` +
+        `<span class="arg">${arg}</span>` +
+        `<span class="st ${st}">${st === "run" ? "running" : "exit 0"}</span>`;
+      feed.appendChild(row);
+      while (feed.children.length > 8) feed.removeChild(feed.firstElementChild);
+    };
+    for (let k = 0; k < 7; k++) push();
+    if (!reduce) setInterval(push, 1700);
+  }
+
+  // ---- reveal on scroll
+  const items = document.querySelectorAll(".reveal");
+  if ("IntersectionObserver" in window && !reduce) {
+    const io = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((e) => {
+          if (e.isIntersecting) { e.target.classList.add("in"); io.unobserve(e.target); }
+        });
+      },
+      { rootMargin: "0px 0px -12% 0px", threshold: 0.08 }
+    );
+    items.forEach((el) => io.observe(el));
+  } else {
+    items.forEach((el) => el.classList.add("in"));
+  }
+
+  // ---- idle activity drift so the run never freezes
+  if (runner && !reduce) {
+    let a = 0.55;
+    setInterval(() => { a = 0.45 + Math.random() * 0.5; runner.setActivity(a); }, 2600);
+  }
+
+  addEventListener("pagehide", () => { if (runner) runner.dispose(); });
+})();
+
+/* tiki agent — console runtime: thread, live activity rail, palette */
+window.TikiConsole = () => {
+  const $ = (s, r = document) => r.querySelector(s);
+  const reduce = matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+  const stream = $("#stream");
+  const input = $("#input");
+  const sendBtn = $("#sendBtn");
+  const logEl = $("#log");
+  const todoEl = $("#todo");
+
+  const state = {
+    running: false,
+    aborted: false,
+    tools: 0,
+    ctx: 26,
+    step: 1,
+    speed: 1,
+    started: Date.now(),
+  };
+
+  let lastBody = null;
+  let runner = null;
+  const miniCanvas = $("#mini-ascii");
+  if (miniCanvas && window.TikiAscii && window.TIKI_SCENE) {
+    runner = TikiAscii(miniCanvas, { scene: window.TIKI_SCENE, cell: 8, compact: true });
+  }
+
+  const esc = (s) =>
+    String(s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+  const clock = () => {
+    const d = new Date();
+    return [d.getHours(), d.getMinutes(), d.getSeconds()]
+      .map((n) => String(n).padStart(2, "0"))
+      .join(":");
+  };
+  const jitter = (a, b) => a + Math.random() * (b - a);
+  const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+
+  function pinScroll() {
+    stream.scrollTop = stream.scrollHeight;
+  }
+
+  /* ---------------- activity rail ---------------- */
+
+  function logLine(kind, key, value) {
+    const row = document.createElement("div");
+    row.className = "e " + kind;
+    row.innerHTML = `<time>${clock()}</time><span class="k">${esc(key)}</span><span class="v">${esc(value)}</span>`;
+    logEl.appendChild(row);
+    while (logEl.children.length > 40) logEl.removeChild(logEl.firstElementChild);
+    logEl.scrollTop = logEl.scrollHeight;
+  }
+
+  function setNow(tool, desc, cmd, pct, elapsed) {
+    $("#nowTool").textContent = tool;
+    $("#nowDesc").textContent = desc;
+    $("#nowCmd").textContent = cmd;
+    $("#progBar").style.width = Math.max(4, Math.min(100, pct)) + "%";
+    if (elapsed !== undefined) $("#nowElapsed").textContent = elapsed;
+    $("#stepVal").textContent = String(state.step);
+  }
+
+  function setRunning(on) {
+    state.running = on;
+    const pill = $("#agentPill");
+    pill.classList.toggle("idle", !on);
+    $("#agentPillText").textContent = on ? "running" : "idle";
+    $("#miniState").textContent = on ? "running" : "idle";
+    $("#runState").textContent = on ? "streaming" : "idle";
+    $("#speedVal").textContent = on ? state.speed.toFixed(1) + "×" : "0.0×";
+    if (runner) runner.setActivity(on ? 0.85 : 0.12);
+  }
+
+  function bumpContext() {
+    state.ctx = Math.min(99, state.ctx + 1);
+    $("#ctxVal").textContent = state.ctx + "%";
+    $("#mCtx").textContent = state.ctx + "%";
+  }
+
+  function tickTools() {
+    state.tools++;
+    $("#mTools").textContent = String(state.tools);
+    $("#mLat").textContent = Math.round(jitter(11, 58)) + "ms";
+  }
+
+  const todoProgress = () => {
+    const done = todoEl.querySelectorAll("li.done").length;
+    $("#planCount").textContent = `${done} / ${todoEl.children.length}`;
+  };
+
+  function advanceTodo() {
+    const current = todoEl.querySelector("li.now");
+    if (!current) return;
+    current.className = "done";
+    current.querySelector(".bx").textContent = "✓";
+    const next = current.nextElementSibling;
+    if (next) next.className = "now";
+    todoProgress();
+  }
+
+  /* ---------------- thread rendering ---------------- */
+
+  function addMsg(role) {
+    const el = document.createElement("article");
+    el.className = "msg " + role;
+    const who = role === "user" ? "bos" : "tiki";
+    const av = role === "user" ? "B" : "T";
+    el.innerHTML = `<div class="avatar">${av}</div>
+      <div>
+        <div class="who"><b>${who}</b><span>${role === "user" ? "operator" : "agent · flash runtime"}</span><time>${clock()}</time></div>
+        <div class="body"></div>
+      </div>`;
+    stream.appendChild(el);
+    pinScroll();
+    lastBody = el.querySelector(".body");
+    return lastBody;
+  }
+
+  async function type(el, text, cps = 90) {
+    const span = document.createElement("span");
+    const caret = document.createElement("span");
+    caret.className = "stream-caret";
+    el.appendChild(span);
+    el.appendChild(caret);
+    if (reduce) {
+      span.textContent = text;
+      caret.remove();
+      return;
+    }
+    const step = Math.max(1, Math.round(text.length / ((text.length / cps) * 60)));
+    for (let i = 0; i < text.length; i += step) {
+      if (state.aborted) break;
+      span.textContent = text.slice(0, i + step);
+      pinScroll();
+      await sleep(16);
+    }
+    span.textContent = text;
+    caret.remove();
+  }
+
+  function addTool(name, cmd, status = "run") {
+    const d = document.createElement("details");
+    d.className = "tool";
+    d.open = true;
+    d.innerHTML = `<summary>
+        <span class="ti">$</span>
+        <span class="nm">${esc(name)}</span>
+        <span class="ar">${esc(cmd)}</span>
+        <span class="st ${status}">${status === "run" ? "running" : "exit 0"}</span>
+      </summary>
+      <pre></pre>`;
+    const body = lastBody || stream;
+    body.appendChild(d);
+    pinScroll();
+    return d;
+  }
+
+  function addDiff(file, add, del, rows) {
+    const wrap = document.createElement("div");
+    wrap.className = "diff";
+    wrap.innerHTML = `<div class="diff-head"><span class="f">${esc(file)}</span>
+        <span class="add">+${add}</span><span class="del">−${del}</span>
+        <span style="margin-left:auto">patch ready</span></div>
+      <pre>${rows
+        .map((r) => {
+          const cls = r[0] === "+" ? "a" : r[0] === "-" ? "d" : "";
+          const sign = r[0] === "+" || r[0] === "-" || r[0] === " " ? r[0] : " ";
+          const text = r[0] === "+" || r[0] === "-" || r[0] === " " ? r.slice(1) : r;
+          return `<span class="ln ${cls}"><span class="g">${esc(sign)}</span>${esc(text)}</span>`;
+        })
+        .join("")}</pre>`;
+    const body = lastBody || stream;
+    body.appendChild(wrap);
+    pinScroll();
+  }
+
+  async function streamOutput(pre, lines) {
+    pre.textContent = "";
+    for (const line of lines) {
+      if (state.aborted) break;
+      pre.textContent += line + "\n";
+      pre.scrollTop = pre.scrollHeight;
+      pinScroll();
+      await sleep(jitter(90, 190));
+    }
+  }
+
+  function thinking(text) {
+    const el = document.createElement("div");
+    el.className = "thinking";
+    el.innerHTML = `<i></i><i></i><i></i><span>${esc(text)}</span>`;
+    const body = lastBody || stream;
+    body.appendChild(el);
+    pinScroll();
+    return el;
+  }
+  /* ---------------- playback primitives ---------------- */
+
+  async function pause(ms) {
+    if (state.aborted) return;
+    await sleep(ms);
+  }
+
+  async function waitThinking(label, ms = 900) {
+    const el = thinking(label);
+    await pause(ms);
+    el.remove();
+  }
+
+  async function runTool(name, cmd, lines, desc, pct) {
+    if (state.aborted) return null;
+    const t = addTool(name, cmd, "run");
+    setNow(name, desc || "exec", cmd, 12, "0.0s");
+    logLine("hot", name, cmd);
+    await pause(260);
+    const pre = t.querySelector("pre");
+    pre.textContent = "";
+    let i = 0;
+    for (const line of lines) {
+      if (state.aborted) break;
+      pre.textContent += line + "\n";
+      pre.scrollTop = pre.scrollHeight;
+      pinScroll();
+      i++;
+      setNow(name, desc || "exec", cmd, 12 + (i / lines.length) * 84, (i * 0.11).toFixed(1) + "s");
+      await sleep(jitter(70, 165));
+    }
+    const st = t.querySelector(".st");
+    st.className = "st ok";
+    st.textContent = "exit 0";
+    tickTools();
+    bumpContext();
+    logLine("ok", name, (desc || "exec") + " · exit 0");
+    return t;
+  }
+
+  /* ---------------- seed run ---------------- */
+
+  const NMAP = [
+    "Starting Nmap 7.95 ( https://nmap.org )",
+    "Nmap scan report for staging.acme-core.io (10.0.4.12)",
+    "PORT     STATE SERVICE    VERSION",
+    "22/tcp   open  ssh        OpenSSH 9.6 (Ubuntu)",
+    "443/tcp  open  ssl/http   nginx 1.24.0",
+    "5432/tcp open  postgresql PostgreSQL 15.4",
+    "8080/tcp open  http       Node.js Express (Next.js 14.1)",
+    "Service detection performed. 9 services, 4 hosts up.",
+  ];
+
+  const GREP = [
+    "src/api/v2/user.ts:42   const org = req.headers['x-org-id'] ?? user.orgId;",
+    "src/api/v2/user.ts:43   const row = await db.user.findById(id, { org });",
+    "src/auth/session.ts:88  if (!claims.org) return next();",
+    "",
+    "3 matches · 2 files · trust boundary crossed at header read",
+  ];
+
+  const CURL = [
+    "$ curl -s -H 'authorization: Bearer <user>' -H 'x-org-id: org_9f3' \\",
+    "      https://staging.acme-core.io/api/v2/user?id=1",
+    "",
+    "HTTP/2 200",
+    "content-type: application/json",
+    "",
+    '{"id":1,"email":"root@acme-core.io","role":"owner",',
+    ' "org":"org_9f3","mfa":false,"impersonation":"disabled"}',
+    "",
+    "→ cross-tenant read confirmed · owner record exposed",
+  ];
+
+  async function playSeed() {
+    setRunning(true);
+
+    const u = addMsg("user");
+    u.innerHTML =
+      "<p>Recon <code>acme-core</code> staging. I want the auth bypass you flagged last week, then chain to RCE if the path is clean. Report + patches.</p>";
+
+    logLine("hot", "run.start", "profile deep · budget 200k");
+    setNow("planner", "scoping", "resolve scope.yaml · 4 hosts", 8, "0.2s");
+    await waitThinking("planning · 4 hosts, 2 authenticated", 1100);
+
+    const a1 = addMsg("agent");
+    await type(
+      a1,
+      "Scope parsed: 10.0.4.0/24, staging only, no destructive writes. Plan is recon → header trust review → idor proof → patch. Starting with a service sweep."
+    );
+    setNow("planner", "recon", "nmap 10.0.4.0/24", 24, "0.6s");
+    await pause(500);
+    advanceTodo();
+
+    await runTool(
+      "tool.bash",
+      "nmap -sV -T4 10.0.4.0/24 -oX recon/nmap.xml",
+      NMAP,
+      "service sweep",
+      0
+    );
+    setNow("tool.grep", "header trust review", "grep -rn \"x-org-id\" src/", 52, "1.4s");
+    await pause(420);
+    advanceTodo();
+
+    await runTool(
+      "tool.grep",
+      "grep -rn \"x-org-id\" src/ --include=*.ts",
+      GREP,
+      "header trust review",
+      0
+    );
+
+    const a2 = addMsg("agent");
+    await type(
+      a2,
+      "Found it. /api/v2/user reads x-org-id straight from the request header and passes it into the query as a tenant filter, with no check that the caller's session belongs to that org. session.ts bails early when claims.org is missing, so the request never reaches the guard."
+    );
+
+    await runTool(
+      "tool.bash",
+      "curl -s -H 'x-org-id: org_9f3' /api/v2/user?id=1",
+      CURL,
+      "idor proof · cross-tenant read",
+      0
+    );
+    advanceTodo();
+    logLine("hot", "finding", "cross-tenant idor · severity critical");
+
+    const a3 = addMsg("agent");
+    await type(
+      a3,
+      "Proof is clean: user token + foreign org header returns the owner record. That is a full tenant escape. Patch below takes the header out of the trust path and derives org from the session claims only."
+    );
+    addDiff("src/api/v2/user.ts", 12, 3, [
+      "   export async function getUser(req: Request) {",
+      "-  const org = req.headers['x-org-id'] ?? user.orgId;",
+      "-  const row = await db.user.findById(id, { org });",
+      "+  const claims = await requireSession(req);",
+      "+  if (!claims.org) throw forbidden('no org in session');",
+      "+  const row = await db.user.findById(id, { org: claims.org });",
+      "+  if (row.org !== claims.org) throw forbidden('cross-tenant');",
+      "   return row;",
+      " }",
+    ]);
+
+    await runTool(
+      "tool.bash",
+      "pnpm test --filter api/v2 -- --runInBand",
+      [
+        "PASS  api/v2/user.test.ts",
+        "  ✓ rejects missing org claim            (12 ms)",
+        "  ✓ rejects foreign x-org-id header      (9 ms)",
+        "  ✓ scopes query to session org          (7 ms)",
+        "",
+        "Tests: 3 passed, 3 total · 28ms",
+      ],
+      "patch verification",
+      0
+    );
+
+    const a4 = addMsg("agent");
+    a4.innerHTML =
+      "<p><strong>Impact:</strong> any authenticated user could read or modify records in any tenant, including owner accounts. Chained with the impersonation flag that is a straight path to admin, and from there to the shell on 8080.</p>" +
+      "<p>Report written to <code>reports/acme-core.md</code> with the request/response pair, the patch and a revert path. Two more endpoints read the same header — queued next.</p>";
+    pinScroll();
+
+    setNow("tool.report", "writing report", "reports/acme-core.md", 100, "8.9s");
+    logLine("ok", "report", "reports/acme-core.md · critical, 2 high");
+    advanceTodo();
+    await pause(700);
+
+    state.step = 4;
+    setNow("subagent", "exploit-chain", "build impersonation payload", 46, "9.4s");
+    setRunning(true);
+    ambient();
+  }
+
+  /* ---------------- ambient activity ---------------- */
+
+  let ambientTimer = 0;
+  const AMBIENT = [
+    ["tool.browser", "verify token scope → admin", "browser probe", "GET /api/v2/admin/keys"],
+    ["tool.bash", "ffuf -w raft-small -u /api/FUZZ", "surface fuzz", "ffuf raft-small"],
+    ["tool.grep", "prototype pollution sinks", "sink review", "grep --assign"],
+    ["subagent", "recon-web", "crawl JS bundles", "js deps + secrets"],
+    ["tool.browser", "replay request without mfa", "mfa bypass check", "POST /api/v2/session"],
+  ];
+
+  function ambient() {
+    clearInterval(ambientTimer);
+    let i = 0;
+    ambientTimer = setInterval(() => {
+      if (!state.running || state.aborted) return;
+      const [tool, arg, desc, cmd] = AMBIENT[i % AMBIENT.length];
+      i++;
+      state.step++;
+      setNow(tool, desc, cmd, 10 + Math.random() * 80, (8 + i).toFixed(1) + "s");
+      if (i % 2 === 0) {
+        tickTools();
+        logLine("hot", tool, arg);
+      }
+      const bars = document.querySelectorAll(".agent-row .bar i");
+      bars.forEach((b) => {
+        const v = Math.min(98, parseFloat(b.style.width) + Math.random() * 6);
+        b.style.width = v + "%";
+        b.parentElement.parentElement.querySelector(".pc").textContent = Math.round(v) + "%";
+      });
+      state.speed = jitter(8.2, 12.6);
+      $("#speedVal").textContent = state.speed.toFixed(1) + "×";
+      document.querySelector("#stream").scrollTop = document.querySelector("#stream").scrollHeight;
+    }, 3200);
+  }
+
+  /* ---------------- replies ---------------- */
+
+  function reportBlock() {
+    const a = addMsg("agent");
+    a.innerHTML =
+      "<p>Report assembled. Three findings, one critical, patches attached, revert path included.</p>";
+    const t = addTool("tool.report", "reports/acme-core.md", "run");
+    t.querySelector("pre").textContent = [
+      "# acme-core — security report",
+      "",
+      "CRITICAL  idor  /api/v2/user        cross-tenant read + write",
+      "HIGH      auth  /api/v2/admin/keys  header-trusted org scope",
+      "HIGH      mfa   /api/v2/session     bypass via impersonation flag",
+      "",
+      "evidence   2 request/response pairs · 1 diff · 3 tests",
+      "budget     138k / 200k tokens · 41.2s wall",
+      "",
+      "verdict    tenant escape confirmed, chain to admin verified",
+    ].join("\n");
+    t.querySelector(".st").className = "st ok";
+    t.querySelector(".st").textContent = "ready";
+    tickTools();
+    logLine("ok", "report", "exported · 3 findings");
+    pinScroll();
+  }
+
+  async function reply(text) {
+    const t = text.toLowerCase();
+    if (/report|export|summary/.test(t)) {
+      setRunning(true);
+      setNow("tool.report", "assembling", "reports/acme-core.md", 30, "0.1s");
+      await pause(700);
+      reportBlock();
+      setRunning(false);
+      return;
+    }
+    if (/sql|inject|sqli/.test(t)) {
+      setRunning(true);
+      const a = addMsg("agent");
+      await type(a, "Running a parameterised probe against the id sink, then a time-based fallback if the first is clean.");
+      await runTool(
+        "tool.bash",
+        "sqlmap -u 'https://staging.acme-core.io/api/v2/user?id=1' --batch --level=2",
+        [
+          "[INFO] testing connection to the target URL",
+          "[INFO] heuristic test shows the GET parameter 'id' might be injectable",
+          "[INFO] testing 'AND boolean-based blind'",
+          "[CRITICAL] all tested parameters appear to be injectable",
+          "back-end DBMS: PostgreSQL 15.4",
+          "→ parameterised query confirmed absent · sink is concatenated",
+        ],
+        "sqli probe",
+        0
+      );
+      await type(a, "Injection confirmed on id. The patch in src/api/v2/user.ts already routes through the query builder — applying it here closes both this and the idor.");
+      setRunning(false);
+      return;
+    }
+    setRunning(true);
+    const a = addMsg("agent");
+    await waitThinking("reading workspace · 3 files in context", 700);
+    await type(a, "On it. Checking the same trust path in api/v2/admin and mapping what the owner token can reach once org scope is bypassed.");
+    await runTool(
+      "tool.browser",
+      "GET /api/v2/admin/keys with org_9f3",
+      [
+        "HTTP/2 200",
+        '{"keys":[{"id":"k_live_4f2","scope":"write"},',
+        ' {"id":"k_live_91a","scope":"admin"}]}',
+        "",
+        "→ admin key material exposed to tenant-scoped token",
+      ],
+      "admin surface",
+      0
+    );
+    await type(a, "Second instance confirmed: /api/v2/admin/keys leaks live admin keys to any tenant token. Queued the patch and added it to the report.");
+    setRunning(true);
+    ambient();
+  }
+
+  /* ---------------- wiring ---------------- */
+
+  function send() {
+    const text = input.value.trim();
+    if (!text) return;
+    const u = addMsg("user");
+    u.textContent = text;
+    input.value = "";
+    input.style.height = "auto";
+    state.aborted = false;
+    bumpContext();
+    logLine("hot", "prompt", text.slice(0, 60));
+    reply(text);
+    pinScroll();
+  }
+
+  sendBtn.addEventListener("click", send);
+
+  input.addEventListener("keydown", (e) => {
+    if (e.key === "Enter" && !e.shiftKey) {
+      e.preventDefault();
+      send();
+    }
+  });
+
+  input.addEventListener("input", () => {
+    input.style.height = "auto";
+    input.style.height = Math.min(180, input.scrollHeight) + "px";
+  });
+
+  document.querySelectorAll(".pchip[data-profile]").forEach((chip) => {
+    chip.addEventListener("click", () => {
+      document.querySelectorAll(".pchip[data-profile]").forEach((c) => c.classList.remove("on"));
+      chip.classList.add("on");
+      logLine("hot", "profile", chip.dataset.profile + " selected");
+    });
+  });
+
+  $("#stopBtn").addEventListener("click", () => {
+    state.aborted = true;
+    state.running = false;
+    setRunning(false);
+    logLine("hot", "run.abort", "killed by operator");
+    setNow("—", "aborted", "no tool running", 0, "—");
+  });
+
+  $("#exportBtn").addEventListener("click", () => {
+    reportBlock();
+    logLine("ok", "export", "reports/acme-core.md");
+  });
+
+  const MODELS = ["tiki-v3 · flash", "tiki-v3 · deep", "tiki-v3 · local"];
+  let mi = 0;
+  $("#modelChip").addEventListener("click", () => {
+    mi = (mi + 1) % MODELS.length;
+    $("#modelChip").querySelector("b").textContent = MODELS[mi];
+    logLine("hot", "model", MODELS[mi]);
+  });
+
+  $("#railBtn").addEventListener("click", () => $("#rail").classList.toggle("open"));
+  $("#actBtn").addEventListener("click", () => $("#activity").classList.toggle("open"));
+
+  if (runner && !reduce) {
+    setInterval(() => {
+      if (state.running) runner.setActivity(jitter(0.7, 1));
+      else runner.setActivity(0.12);
+    }, 1800);
+  }
+
+  setInterval(() => {
+    const s = Math.floor((Date.now() - state.started) / 1000);
+    $("#elapsed").textContent =
+      String(Math.floor(s / 60)).padStart(2, "0") + ":" + String(s % 60).padStart(2, "0");
+  }, 1000);
+
+  setInterval(() => {
+    $("#mTok").textContent = state.running ? String(Math.round(jitter(48, 132))) : "0";
+  }, 1400);
+
+  /* ---------------- palette ---------------- */
+
+  const COMMANDS = [
+    { label: "new session", hint: "⌘N", run: () => { stream.innerHTML = ""; state.aborted = false; logLine("hot", "session", "tk-8843 created"); playSeed(); } },
+    { label: "run report", hint: "⌘E", run: reportBlock },
+    { label: "toggle activity rail", hint: "⌘A", run: () => $("#activity").classList.toggle("open") },
+    { label: "toggle workspace", hint: "⌘B", run: () => $("#rail").classList.toggle("open") },
+    { label: "switch model", hint: "⌘M", run: () => $("#modelChip").click() },
+    { label: "stop current run", hint: "esc", run: () => $("#stopBtn").click() },
+    { label: "open landing", hint: "↗", run: () => (location.href = "index.html") },
+    { label: "copy session id", hint: "⌘C", run: () => navigator.clipboard && navigator.clipboard.writeText("tk-8842") },
+  ];
+
+  const palette = $("#palette");
+  const palInput = $("#palInput");
+  const palList = $("#palList");
+  const palEmpty = $("#palEmpty");
+  let palSel = 0;
+
+  function renderPalette() {
+    const q = palInput.value.toLowerCase().trim();
+    const items = COMMANDS.filter((c) => c.label.includes(q));
+    palSel = Math.min(palSel, Math.max(0, items.length - 1));
+    palList.innerHTML = items
+      .map(
+        (c, i) =>
+          `<li class="${i === palSel ? "sel" : ""}" data-i="${i}"><span>${esc(c.label)}</span><span class="k">${c.hint}</span></li>`
+      )
+      .join("");
+    palEmpty.hidden = items.length > 0;
+    palList._items = items;
+  }
+
+  function openPalette() {
+    palette.hidden = false;
+    palInput.value = "";
+    palSel = 0;
+    renderPalette();
+    palInput.focus();
+  }
+  function closePalette() {
+    palette.hidden = true;
+    input.focus();
+  }
+
+  palInput.addEventListener("input", renderPalette);
+  palInput.addEventListener("keydown", (e) => {
+    const items = palList._items || [];
+    if (e.key === "ArrowDown") { e.preventDefault(); palSel = Math.min(items.length - 1, palSel + 1); renderPalette(); }
+    if (e.key === "ArrowUp") { e.preventDefault(); palSel = Math.max(0, palSel - 1); renderPalette(); }
+    if (e.key === "Enter" && items[palSel]) { closePalette(); items[palSel].run(); }
+    if (e.key === "Escape") closePalette();
+  });
+  palList.addEventListener("click", (e) => {
+    const li = e.target.closest("li");
+    if (!li) return;
+    const items = palList._items || [];
+    const cmd = items[Number(li.dataset.i)];
+    if (cmd) { closePalette(); cmd.run(); }
+  });
+  palette.addEventListener("click", (e) => { if (e.target === palette) closePalette(); });
+
+  addEventListener("keydown", (e) => {
+    const meta = e.metaKey || e.ctrlKey;
+    if (meta && e.key.toLowerCase() === "k") { e.preventDefault(); palette.hidden ? openPalette() : closePalette(); return; }
+    if (e.key === "Escape" && !palette.hidden) { closePalette(); return; }
+    if (e.key === "/" && document.activeElement !== input && palette.hidden) {
+      e.preventDefault();
+      input.focus();
+    }
+  });
+
+  todoProgress();
+  playSeed();
+
+};
+
+</script>
+<script>
+
+(() => {
+  const landingView = document.getElementById("view-landing");
+  const consoleView = document.getElementById("view-app");
+  let booted = false;
+  function route() {
+    const onConsole = location.hash.replace(/^#\/?/, "") === "console";
+    landingView.hidden = onConsole;
+    consoleView.hidden = !onConsole;
+    document.body.classList.toggle("on-console", onConsole);
+    if (onConsole && !booted) {
+      booted = true;
+      if (window.TikiConsole) window.TikiConsole();
+    }
+    if (!onConsole) window.scrollTo(0, 0);
+  }
+  addEventListener("hashchange", route);
+  route();
+})();
+
+</script>
+</body>
+</html>
