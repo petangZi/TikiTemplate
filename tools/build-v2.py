@@ -69,7 +69,7 @@ def main(src="tiki-agent", out_dir=None):
 /* ---- inline build: view router + svg assets ---- */
 .view[hidden] { display: none; }
 body.on-console { overflow: hidden; height: 100dvh; }
-#view-landing { min-height: 100dvh; background: var(--bg); }
+#view-landing { min-height: 100dvh; background: transparent; }
 .brand svg.mark { width: 26px; height: 26px; }
 .topbar .brand svg.mark { width: 22px; height: 22px; }
 .hero-fallback svg { position: absolute; inset: 0; width: 100%; height: 100%; }
@@ -88,7 +88,7 @@ body.on-console { overflow: hidden; height: 100dvh; }
     fav = base64.b64encode((src_dir / "assets/svg/favicon.svg").read_bytes()).decode()
     favicon = f"data:image/svg+xml;base64,{fav}"
 
-    js_files = ("assets/js/ascii.js", "assets/js/chili.js", "assets/js/landing.js", "assets/js/app.js")
+    js_files = ("assets/js/ascii.js", "assets/js/chili.js", "assets/js/page.js", "assets/js/landing.js", "assets/js/app.js")
     js = "\n".join(read(rel + "/" + p) for p in js_files)
 
     router = """
@@ -116,7 +116,7 @@ body.on-console { overflow: hidden; height: 100dvh; }
 <html lang="en">
 <head>
 <meta charset="utf-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1" />
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover" />
 <title>tiki agent — security at the speed of flash</title>
 <meta name="description" content="tiki is a web-native security agent for pentest and code review. Landing page and console in one file." />
 <meta name="theme-color" content="#060607" />

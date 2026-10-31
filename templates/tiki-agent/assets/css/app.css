@@ -283,6 +283,10 @@
   transition: border-color 0.16s, box-shadow 0.16s;
 }
 .composer-box:focus-within { border-color: rgba(255, 47, 47, 0.45); box-shadow: 0 0 0 3px rgba(255, 47, 47, 0.07); }
+.enter .topbar { animation: dash 0.45s cubic-bezier(0.2, 0.7, 0.2, 1) both; }
+.enter .rail,
+.enter .thread-head { animation: rise 0.5s cubic-bezier(0.2, 0.7, 0.2, 1) both; }
+
 .composer textarea {
   width: 100%; display: block; resize: none; border: 0; outline: 0;
   background: transparent; color: var(--ink);
@@ -525,8 +529,30 @@ kbd {
   .icon-btn { width: 34px; height: 34px; }
   .thread-head .tool-mini { display: none; }
   .thread-head { gap: 8px; }
-  .composer textarea { font-size: 16px; line-height: 1.5; }
+  .enter .topbar { animation: dash 0.45s cubic-bezier(0.2, 0.7, 0.2, 1) both; }
+.enter .rail,
+.enter .thread-head { animation: rise 0.5s cubic-bezier(0.2, 0.7, 0.2, 1) both; }
+
+.composer textarea { font-size: 16px; line-height: 1.5; }
   .composer-bar { padding: 6px 8px 8px; }
   .pchip { height: 26px; }
   .send { height: 30px; }
+}
+
+
+/* ---------- motion: stream + rail arrives, not pops ---------- */
+@keyframes flashRow { from { opacity: 0; transform: translateX(-6px); } to { opacity: 1; transform: none; } }
+.log .e { animation: flashRow 0.3s cubic-bezier(0.2, 0.7, 0.2, 1) both; }
+.log .e.done .v { color: var(--ok); }
+.log .e.hl .v { color: var(--red); }
+
+@media (max-width: 700px) {
+  .composer textarea { font-size: 16px; }  /* keeps iOS from zooming the field */
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .enter .topbar,
+  .enter .rail,
+  .enter .thread-head,
+  .log .e { animation: none; }
 }

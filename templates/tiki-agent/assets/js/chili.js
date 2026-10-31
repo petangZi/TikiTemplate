@@ -161,25 +161,28 @@
   }
   vec4 renderScene(vec2 uv, vec2 res){
     float A = (res.x / res.y) * 0.60;
-    float visH = 0.824;
-    float visW = visH * A;
-    float sc = min(mix(0.532, 0.512, uStyle), 0.62 * visW);
+    float fitH = 0.86 * 1.647 / 2.60;
+    float fitW = 0.459 * A;
+    float sc = min(mix(0.532, 0.512, uStyle), min(fitH, fitW));
+    float compOff = 0.735 * sc / (1.647 * A);
+    float narrowX = 0.5 + compOff;
     float cenWide = mix(0.56, 0.70, smoothstep(0.9, 1.9, A));
-    float cenX = mix(0.60, cenWide, smoothstep(0.85, 1.15, A));
-    cenX = mix(cenX, 0.5, uStyle);
-    vec2 cen = vec2(cenX, 0.477);
+    float wideX = mix(0.60, cenWide, smoothstep(0.85, 1.15, A));
+    float cenX = mix(narrowX, wideX, smoothstep(0.80, 1.10, A));
+    cenX = mix(cenX, 0.5 + compOff, uStyle);
+    vec2 cen = vec2(cenX, 0.530);
     vec2 sp = (uv - cen) * vec2(A, 1.0);
 
     vec3 ro = vec3(0.0, 0.02, 4.2);
-    vec3 rd = normalize(vec3(sp * mix(1.0, 0.70, uStyle) + (m - 0.5) * 0.12, -2.55));
+    vec3 rd = normalize(vec3(sp * mix(1.0, 0.70, uStyle), -2.55));
 
     float glow = 0.045 * exp(-dot(sp, sp) * 11.0);
     float streak = 0.0;
     for (int i = 0; i < 6; i++){
       float fi = float(i);
-      float yy = 0.10 + 0.80 * h11(fi * 3.7 + 1.3);
+      float yy = 0.10 + 0.80 * h11(fi * 3.7 + 1.3) + (m.y - 0.5) * 0.04;
       float vx = 0.55 + 0.85 * h11(fi * 7.1);
-      float x = fract(uv.x * 1.15 - t * vx * (0.55 + uAct) + h11(fi * 5.3));
+      float x = fract(uv.x * 1.15 - t * vx * (0.55 + uAct) + h11(fi * 5.3) + (m.x - 0.5) * 0.06);
       float len = 0.03 + 0.11 * h11(fi * 9.9);
       float w = 0.0016 + 0.0022 * h11(fi * 2.1);
       streak += smoothstep(w, 0.0, abs(uv.y - yy))
@@ -191,16 +194,15 @@
 
     float run = 10.5 + 11.0 * uAct;
     float ph = t * run;
-    float bob = sin(t * 15.0) * 0.035 * (0.7 + uAct);
-    vec3 pos = vec3(0.0, bob, 0.0);
-    float lean = 0.16 + 0.04 * uAct;
+    vec3 pos = vec3(0.0, 0.0, 0.0);
+    float lean = 0.175;
     float best = 0.0;
 
     for (int g = 3; g >= 0; g--){
       float fg = float(g);
-      vec3 gp = pos - vec3(fg * 0.26, 0.0, 0.0);
+      vec3 gp = pos - vec3(fg * 0.49 * sc, 0.0, 0.0);
       float gsc = sc * (1.0 - fg * 0.015);
-      float gph = ph - fg * 0.26 * (1.0 + uAct);
+      float gph = ph - fg * 0.49 * (1.0 + uAct);
       float boost = g == 0 ? 1.0 : (0.50 / (1.0 + fg * 1.15));
       float mh = 0.0;
       float hit = traceChar(ro, rd, gp, gsc, lean, gph, mh);

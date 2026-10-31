@@ -2,11 +2,12 @@
 (() => {
   const reduce = matchMedia("(prefers-reduced-motion: reduce)").matches;
 
-  // ---- hero ascii runner
-  const canvas = document.getElementById("hero-ascii");
+  // ---- fixed ascii backdrop (runs behind the whole page)
+  const canvas = document.getElementById("site-bg");
   let runner = null;
   if (canvas && window.TikiAscii && window.TIKI_SCENE) {
-    runner = TikiAscii(canvas, { scene: window.TIKI_SCENE, cell: 11 });
+    runner = TikiAscii(canvas, { scene: window.TIKI_SCENE, cell: 12 });
+    if (runner && runner.setActivity) runner.setActivity(0.28);
   }
 
   // ---- terminal

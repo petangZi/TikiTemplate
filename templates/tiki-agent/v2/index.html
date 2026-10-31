@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="utf-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1" />
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover" />
 <title>tiki agent — security at the speed of flash</title>
 <meta name="description" content="tiki is a web-native security agent for pentest and code review. Landing page and console in one file." />
 <meta name="theme-color" content="#060607" />
@@ -59,6 +59,10 @@
 *::after { box-sizing: border-box; }
 
 html, body { margin: 0; padding: 0; }
+
+/* zoom is locked on purpose: the layout is device-adaptive, not scaled */
+html { -webkit-text-size-adjust: 100%; text-size-adjust: 100%; }
+body { touch-action: pan-y; overscroll-behavior-y: none; overflow-x: clip; }
 
 html { background: var(--bg); }
 
@@ -271,6 +275,67 @@ p { margin: 0; }
   .footer-bottom { flex-direction: column; align-items: flex-start; }
 }
 
+
+/* ============================================================
+   fixed ascii backdrop
+   ============================================================ */
+body { isolation: isolate; }
+.site-bg {
+  position: fixed; inset: 0;
+  width: 100%; height: 100%;
+  z-index: -1; pointer-events: none;
+}
+.no-webgl .site-bg { display: none; }
+
+/* ============================================================
+   page transition — skewed red sweep
+   ============================================================ */
+#wipe {
+  position: fixed; inset: -12% -30%;
+  z-index: 9999; pointer-events: none;
+  transform: translate3d(-125%, 0, 0) skewX(-9deg);
+  background: linear-gradient(94deg,
+    rgba(255, 47, 47, 0) 0%,
+    rgba(255, 47, 47, 0.88) 16%,
+    #ff2f2f 44%,
+    #ff6a4d 62%,
+    #f3ecea 100%);
+  transition: transform 0.42s cubic-bezier(0.66, 0, 0.24, 1);
+  will-change: transform;
+}
+#wipe::after {
+  content: ""; position: absolute; inset: 0;
+  background: repeating-linear-gradient(90deg, rgba(0, 0, 0, 0.1) 0 2px, transparent 2px 5px);
+  opacity: 0.45; mix-blend-mode: multiply;
+}
+#wipe.in { transform: translate3d(0, 0, 0) skewX(-9deg); }
+#wipe.out { transform: translate3d(125%, 0, 0) skewX(-9deg); }
+#wipe.hold { transition: none; }
+
+/* ============================================================
+   entrance choreography
+   ============================================================ */
+@keyframes rise { from { opacity: 0; transform: translateY(14px); } to { opacity: 1; transform: none; } }
+@keyframes dash { from { opacity: 0; transform: translateX(-18px) skewX(-6deg); } to { opacity: 1; transform: none; } }
+@keyframes wipeIn { from { opacity: 0; } to { opacity: 1; } }
+
+.enter .hero-copy > * { animation: rise 0.58s cubic-bezier(0.2, 0.7, 0.2, 1) both; }
+.enter .hero-copy > *:nth-child(1) { animation-delay: 0.02s; }
+.enter .hero-copy > *:nth-child(2) { animation-delay: 0.07s; }
+.enter .hero-copy > *:nth-child(3) { animation-delay: 0.13s; }
+.enter .hero-copy > *:nth-child(4) { animation-delay: 0.19s; }
+.enter .hero-copy .tag { animation: dash 0.55s cubic-bezier(0.2, 0.7, 0.2, 1) both; }
+.enter .term-card { animation: rise 0.68s 0.14s cubic-bezier(0.2, 0.7, 0.2, 1) both; }
+.enter .hero-hud { animation: wipeIn 0.9s 0.2s both; }
+
+@media (prefers-reduced-motion: reduce) {
+  #wipe { transition: none; }
+  .enter .hero-copy > *,
+  .enter .hero-copy .tag,
+  .enter .term-card,
+  .enter .hero-hud { animation: none; }
+}
+
 /* ============================================================
    tiki agent — landing
    ============================================================ */
@@ -297,14 +362,11 @@ p { margin: 0; }
   min-height: min(calc(100svh - 64px), 940px);
   isolation: isolate;
 }
-.hero-stage { position: absolute; inset: 0; z-index: 0; }
-.hero-canvas { position: absolute; inset: 0; width: 100%; height: 100%; }
+/* the ascii runner is a fixed backdrop (.site-bg) — the hero only carries the scrim */
 
 /* ---------- non-webgl fallback ---------- */
-.hero-fallback { display: none; position: absolute; right: 2%; top: 50%; transform: translateY(-50%); width: min(44vw, 540px); aspect-ratio: 440 / 360; pointer-events: none; }
-.hero.no-webgl .hero-fallback { display: block; }
-.hero.no-webgl .hero-canvas { display: none; }
-.hero.no-webgl .hero-stage { background: radial-gradient(52% 52% at 62% 54%, rgba(255, 47, 47, 0.14), transparent 72%); }
+.hero-fallback { display: none; position: absolute; right: 2%; top: 50%; transform: translateY(-50%); width: min(44vw, 540px); aspect-ratio: 440 / 360; pointer-events: none; z-index: 0; }
+.no-webgl .hero-fallback { display: block; }
 .hero-fallback img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: contain; }
 .fb-ghost { opacity: 0.16; filter: blur(1px); }
 .fb-ghost.g1 { transform: translateX(-10%); }
@@ -582,21 +644,12 @@ p { margin: 0; }
     padding-bottom: 44px;
   }
   .hero-body { order: 1; }
-  .hero-stage {
-    position: relative;
-    order: 2;
-    inset: auto;
-    width: 100%;
-    aspect-ratio: 5 / 4;
-    margin-top: 22px;
-    border: 1px solid var(--line);
-    border-radius: 8px;
-    background: #060607;
-    overflow: hidden;
+  .hero-scrim {
+    background:
+      linear-gradient(180deg, rgba(6, 6, 7, 0.94) 0%, rgba(6, 6, 7, 0.72) 38%, rgba(6, 6, 7, 0.9) 100%),
+      radial-gradient(70% 55% at 50% 46%, rgba(255, 47, 47, 0.16), transparent 72%);
   }
-  .hero-scrim { display: none; }
-  .hero-fallback { left: 5%; right: 5%; top: 4%; bottom: 4%; width: auto; transform: none; }
-  .hero.no-webgl .hero-stage { background: radial-gradient(60% 60% at 50% 50%, rgba(255, 47, 47, 0.16), transparent 74%); }
+  .hero-fallback { left: 8%; right: 8%; top: auto; bottom: 6%; width: auto; height: 46%; transform: none; opacity: 0.4; }
   .hero-copy { max-width: 100%; }
   .hero h1 { font-size: clamp(36px, 9vw, 58px); }
   .term-card { margin-top: 22px; }
@@ -900,6 +953,10 @@ p { margin: 0; }
   transition: border-color 0.16s, box-shadow 0.16s;
 }
 .composer-box:focus-within { border-color: rgba(255, 47, 47, 0.45); box-shadow: 0 0 0 3px rgba(255, 47, 47, 0.07); }
+.enter .topbar { animation: dash 0.45s cubic-bezier(0.2, 0.7, 0.2, 1) both; }
+.enter .rail,
+.enter .thread-head { animation: rise 0.5s cubic-bezier(0.2, 0.7, 0.2, 1) both; }
+
 .composer textarea {
   width: 100%; display: block; resize: none; border: 0; outline: 0;
   background: transparent; color: var(--ink);
@@ -1142,17 +1199,39 @@ kbd {
   .icon-btn { width: 34px; height: 34px; }
   .thread-head .tool-mini { display: none; }
   .thread-head { gap: 8px; }
-  .composer textarea { font-size: 16px; line-height: 1.5; }
+  .enter .topbar { animation: dash 0.45s cubic-bezier(0.2, 0.7, 0.2, 1) both; }
+.enter .rail,
+.enter .thread-head { animation: rise 0.5s cubic-bezier(0.2, 0.7, 0.2, 1) both; }
+
+.composer textarea { font-size: 16px; line-height: 1.5; }
   .composer-bar { padding: 6px 8px 8px; }
   .pchip { height: 26px; }
   .send { height: 30px; }
 }
 
 
+/* ---------- motion: stream + rail arrives, not pops ---------- */
+@keyframes flashRow { from { opacity: 0; transform: translateX(-6px); } to { opacity: 1; transform: none; } }
+.log .e { animation: flashRow 0.3s cubic-bezier(0.2, 0.7, 0.2, 1) both; }
+.log .e.done .v { color: var(--ok); }
+.log .e.hl .v { color: var(--red); }
+
+@media (max-width: 700px) {
+  .composer textarea { font-size: 16px; }  /* keeps iOS from zooming the field */
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .enter .topbar,
+  .enter .rail,
+  .enter .thread-head,
+  .log .e { animation: none; }
+}
+
+
 /* ---- inline build: view router + svg assets ---- */
 .view[hidden] { display: none; }
 body.on-console { overflow: hidden; height: 100dvh; }
-#view-landing { min-height: 100dvh; background: var(--bg); }
+#view-landing { min-height: 100dvh; background: transparent; }
 .brand svg.mark { width: 26px; height: 26px; }
 .topbar .brand svg.mark { width: 22px; height: 22px; }
 .hero-fallback svg { position: absolute; inset: 0; width: 100%; height: 100%; }
@@ -1281,6 +1360,8 @@ body.on-console { overflow: hidden; height: 100dvh; }
 </svg>
 
 <div class="landing view" id="view-landing">
+<canvas class="site-bg" id="site-bg" aria-hidden="true"></canvas>
+
 <header class="nav">
   <a class="brand" href="#/">
     <svg class="mark" aria-hidden="true"><use href="#tiki-mark"/></svg>
@@ -1302,13 +1383,10 @@ body.on-console { overflow: hidden; height: 100dvh; }
 
 <main>
   <section class="hero" id="top">
-    <div class="hero-stage">
-      <canvas class="hero-canvas" id="hero-ascii" aria-hidden="true"></canvas>
-      <div class="hero-fallback" aria-hidden="true">
-        <svg class="fb-ghost g2 art" aria-hidden="true"><use href="#tiki-mascot"/></svg>
-        <svg class="fb-ghost g1 art" aria-hidden="true"><use href="#tiki-mascot"/></svg>
-        <svg class="fb-run art" aria-hidden="true"><use href="#tiki-mascot"/></svg>
-      </div>
+    <div class="hero-fallback" aria-hidden="true">
+      <svg class="fb-ghost g2 art" aria-hidden="true"><use href="#tiki-mascot"/></svg>
+      <svg class="fb-ghost g1 art" aria-hidden="true"><use href="#tiki-mascot"/></svg>
+      <svg class="fb-run art" aria-hidden="true"><use href="#tiki-mascot"/></svg>
     </div>
     <div class="hero-scrim"></div>
 
@@ -1850,7 +1928,7 @@ body.on-console { overflow: hidden; height: 100dvh; }
       canvas.style.background =
         "radial-gradient(42% 46% at 62% 54%, rgba(255,47,47,.22), rgba(120,10,10,.10) 45%, transparent 72%)";
       canvas.classList.add("ascii-off");
-      const host = canvas.closest(".hero, .mini") || canvas.parentElement;
+      const host = canvas.closest(".hero, .mini") || document.body;
       if (host) host.classList.add("no-webgl");
       return { ok: false, setActivity() {}, dispose() {} };
     }
@@ -2176,25 +2254,28 @@ body.on-console { overflow: hidden; height: 100dvh; }
   }
   vec4 renderScene(vec2 uv, vec2 res){
     float A = (res.x / res.y) * 0.60;
-    float visH = 0.824;
-    float visW = visH * A;
-    float sc = min(mix(0.532, 0.512, uStyle), 0.62 * visW);
+    float fitH = 0.86 * 1.647 / 2.60;
+    float fitW = 0.459 * A;
+    float sc = min(mix(0.532, 0.512, uStyle), min(fitH, fitW));
+    float compOff = 0.735 * sc / (1.647 * A);
+    float narrowX = 0.5 + compOff;
     float cenWide = mix(0.56, 0.70, smoothstep(0.9, 1.9, A));
-    float cenX = mix(0.60, cenWide, smoothstep(0.85, 1.15, A));
-    cenX = mix(cenX, 0.5, uStyle);
-    vec2 cen = vec2(cenX, 0.477);
+    float wideX = mix(0.60, cenWide, smoothstep(0.85, 1.15, A));
+    float cenX = mix(narrowX, wideX, smoothstep(0.80, 1.10, A));
+    cenX = mix(cenX, 0.5 + compOff, uStyle);
+    vec2 cen = vec2(cenX, 0.530);
     vec2 sp = (uv - cen) * vec2(A, 1.0);
 
     vec3 ro = vec3(0.0, 0.02, 4.2);
-    vec3 rd = normalize(vec3(sp * mix(1.0, 0.70, uStyle) + (m - 0.5) * 0.12, -2.55));
+    vec3 rd = normalize(vec3(sp * mix(1.0, 0.70, uStyle), -2.55));
 
     float glow = 0.045 * exp(-dot(sp, sp) * 11.0);
     float streak = 0.0;
     for (int i = 0; i < 6; i++){
       float fi = float(i);
-      float yy = 0.10 + 0.80 * h11(fi * 3.7 + 1.3);
+      float yy = 0.10 + 0.80 * h11(fi * 3.7 + 1.3) + (m.y - 0.5) * 0.04;
       float vx = 0.55 + 0.85 * h11(fi * 7.1);
-      float x = fract(uv.x * 1.15 - t * vx * (0.55 + uAct) + h11(fi * 5.3));
+      float x = fract(uv.x * 1.15 - t * vx * (0.55 + uAct) + h11(fi * 5.3) + (m.x - 0.5) * 0.06);
       float len = 0.03 + 0.11 * h11(fi * 9.9);
       float w = 0.0016 + 0.0022 * h11(fi * 2.1);
       streak += smoothstep(w, 0.0, abs(uv.y - yy))
@@ -2206,16 +2287,15 @@ body.on-console { overflow: hidden; height: 100dvh; }
 
     float run = 10.5 + 11.0 * uAct;
     float ph = t * run;
-    float bob = sin(t * 15.0) * 0.035 * (0.7 + uAct);
-    vec3 pos = vec3(0.0, bob, 0.0);
-    float lean = 0.16 + 0.04 * uAct;
+    vec3 pos = vec3(0.0, 0.0, 0.0);
+    float lean = 0.175;
     float best = 0.0;
 
     for (int g = 3; g >= 0; g--){
       float fg = float(g);
-      vec3 gp = pos - vec3(fg * 0.26, 0.0, 0.0);
+      vec3 gp = pos - vec3(fg * 0.49 * sc, 0.0, 0.0);
       float gsc = sc * (1.0 - fg * 0.015);
-      float gph = ph - fg * 0.26 * (1.0 + uAct);
+      float gph = ph - fg * 0.49 * (1.0 + uAct);
       float boost = g == 0 ? 1.0 : (0.50 / (1.0 + fg * 1.15));
       float mh = 0.0;
       float hit = traceChar(ro, rd, gp, gsc, lean, gph, mh);
@@ -2237,15 +2317,122 @@ body.on-console { overflow: hidden; height: 100dvh; }
   window.TIKI_SCENE = SCENE;
 })();
 
+/* shared chrome — pinch-zoom lock + page transitions */
+(() => {
+  const reduce = matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+  /* ---------------- zoom / overscroll lock ---------------- */
+  const multi = (e) => {
+    if (e.touches && e.touches.length > 1) e.preventDefault();
+  };
+  document.addEventListener("touchstart", multi, { passive: false });
+  document.addEventListener("touchmove", multi, { passive: false });
+
+  let lastTap = 0;
+  document.addEventListener(
+    "touchend",
+    (e) => {
+      const now = Date.now();
+      if (now - lastTap <= 300) e.preventDefault();
+      lastTap = now;
+    },
+    { passive: false }
+  );
+
+  ["gesturestart", "gesturechange", "gestureend"].forEach((name) =>
+    document.addEventListener(name, (e) => e.preventDefault(), { passive: false })
+  );
+
+  /* ---------------- wipe overlay ---------------- */
+  const wipe = document.createElement("div");
+  wipe.id = "wipe";
+  wipe.setAttribute("aria-hidden", "true");
+  document.body.appendChild(wipe);
+
+  const KEY = "tiki:wipe";
+  let leaving = false;
+
+  function enter() {
+    document.body.classList.remove("enter");
+    void document.body.offsetWidth;
+    document.body.classList.add("enter");
+  }
+
+  function cover() {
+    wipe.classList.remove("out", "hold");
+    void wipe.offsetWidth;
+    wipe.classList.add("in");
+  }
+
+  function reveal() {
+    wipe.classList.remove("in");
+    wipe.classList.add("out");
+    enter();
+  }
+
+  /* arriving from another page: overflow the overlay, then sweep it away */
+  if (!reduce) {
+    let arriving = false;
+    try {
+      arriving = sessionStorage.getItem(KEY) === "1";
+      sessionStorage.removeItem(KEY);
+    } catch (_) {}
+    if (arriving) {
+      wipe.classList.add("hold", "in");
+      requestAnimationFrame(() => {
+        wipe.classList.remove("hold");
+        requestAnimationFrame(() => {
+          wipe.classList.remove("in");
+          wipe.classList.add("out");
+        });
+      });
+    }
+  }
+
+  addEventListener("pageshow", enter);
+
+  /* full page navigation: cover, then move */
+  document.addEventListener(
+    "click",
+    (e) => {
+      if (e.metaKey || e.ctrlKey || e.shiftKey || e.altKey || e.button !== 0) return;
+      const a = e.target.closest("a[href]");
+      if (!a || a.target === "_blank" || a.hasAttribute("download")) return;
+
+      const raw = a.getAttribute("href");
+      if (!raw || raw.startsWith("#") || /^(https?:|mailto:|tel:|javascript:)/i.test(raw)) return;
+      if (a.host && a.host !== location.host) return;
+
+      e.preventDefault();
+      if (leaving) return;
+      leaving = true;
+      try {
+        sessionStorage.setItem(KEY, "1");
+      } catch (_) {}
+      cover();
+      setTimeout(() => (location.href = a.href), reduce ? 0 : 330);
+    },
+    true
+  );
+
+  /* in-document routing (hash views): wipe around the swap */
+  addEventListener("hashchange", () => {
+    if (leaving) return;
+    cover();
+    setTimeout(reveal, reduce ? 0 : 300);
+  });
+})();
+
 /* landing page — hero runner, terminal, lab feed, reveal */
 (() => {
   const reduce = matchMedia("(prefers-reduced-motion: reduce)").matches;
 
-  // ---- hero ascii runner
-  const canvas = document.getElementById("hero-ascii");
+  // ---- fixed ascii backdrop (runs behind the whole page)
+  const canvas = document.getElementById("site-bg");
   let runner = null;
   if (canvas && window.TikiAscii && window.TIKI_SCENE) {
-    runner = TikiAscii(canvas, { scene: window.TIKI_SCENE, cell: 11 });
+    runner = TikiAscii(canvas, { scene: window.TIKI_SCENE, cell: 12 });
+    if (runner && runner.setActivity) runner.setActivity(0.28);
   }
 
   // ---- terminal

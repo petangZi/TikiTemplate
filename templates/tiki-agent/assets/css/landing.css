@@ -24,14 +24,11 @@
   min-height: min(calc(100svh - 64px), 940px);
   isolation: isolate;
 }
-.hero-stage { position: absolute; inset: 0; z-index: 0; }
-.hero-canvas { position: absolute; inset: 0; width: 100%; height: 100%; }
+/* the ascii runner is a fixed backdrop (.site-bg) — the hero only carries the scrim */
 
 /* ---------- non-webgl fallback ---------- */
-.hero-fallback { display: none; position: absolute; right: 2%; top: 50%; transform: translateY(-50%); width: min(44vw, 540px); aspect-ratio: 440 / 360; pointer-events: none; }
-.hero.no-webgl .hero-fallback { display: block; }
-.hero.no-webgl .hero-canvas { display: none; }
-.hero.no-webgl .hero-stage { background: radial-gradient(52% 52% at 62% 54%, rgba(255, 47, 47, 0.14), transparent 72%); }
+.hero-fallback { display: none; position: absolute; right: 2%; top: 50%; transform: translateY(-50%); width: min(44vw, 540px); aspect-ratio: 440 / 360; pointer-events: none; z-index: 0; }
+.no-webgl .hero-fallback { display: block; }
 .hero-fallback img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: contain; }
 .fb-ghost { opacity: 0.16; filter: blur(1px); }
 .fb-ghost.g1 { transform: translateX(-10%); }
@@ -309,21 +306,12 @@
     padding-bottom: 44px;
   }
   .hero-body { order: 1; }
-  .hero-stage {
-    position: relative;
-    order: 2;
-    inset: auto;
-    width: 100%;
-    aspect-ratio: 5 / 4;
-    margin-top: 22px;
-    border: 1px solid var(--line);
-    border-radius: 8px;
-    background: #060607;
-    overflow: hidden;
+  .hero-scrim {
+    background:
+      linear-gradient(180deg, rgba(6, 6, 7, 0.94) 0%, rgba(6, 6, 7, 0.72) 38%, rgba(6, 6, 7, 0.9) 100%),
+      radial-gradient(70% 55% at 50% 46%, rgba(255, 47, 47, 0.16), transparent 72%);
   }
-  .hero-scrim { display: none; }
-  .hero-fallback { left: 5%; right: 5%; top: 4%; bottom: 4%; width: auto; transform: none; }
-  .hero.no-webgl .hero-stage { background: radial-gradient(60% 60% at 50% 50%, rgba(255, 47, 47, 0.16), transparent 74%); }
+  .hero-fallback { left: 8%; right: 8%; top: auto; bottom: 6%; width: auto; height: 46%; transform: none; opacity: 0.4; }
   .hero-copy { max-width: 100%; }
   .hero h1 { font-size: clamp(36px, 9vw, 58px); }
   .term-card { margin-top: 22px; }

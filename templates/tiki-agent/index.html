@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="utf-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1" />
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover" />
 <title>tiki agent — security at the speed of flash</title>
 <meta name="description" content="tiki is a web-native security agent for pentest and code review. Recon, fingerprint, exploit and report in one live thread — with every tool call streaming in the open." />
 <meta name="theme-color" content="#060607" />
@@ -19,6 +19,8 @@
 <link rel="stylesheet" href="assets/css/landing.css" />
 </head>
 <body class="landing">
+
+<canvas class="site-bg" id="site-bg" aria-hidden="true"></canvas>
 
 <header class="nav">
   <a class="brand" href="index.html">
@@ -41,13 +43,10 @@
 
 <main>
   <section class="hero" id="top">
-    <div class="hero-stage">
-      <canvas class="hero-canvas" id="hero-ascii" aria-hidden="true"></canvas>
-      <div class="hero-fallback" aria-hidden="true">
-        <img class="fb-ghost g2" src="assets/svg/tiki-mascot.svg" alt="" />
-        <img class="fb-ghost g1" src="assets/svg/tiki-mascot.svg" alt="" />
-        <img class="fb-run" src="assets/svg/tiki-mascot.svg" alt="" />
-      </div>
+    <div class="hero-fallback" aria-hidden="true">
+      <img class="fb-ghost g2" src="assets/svg/tiki-mascot.svg" alt="" />
+      <img class="fb-ghost g1" src="assets/svg/tiki-mascot.svg" alt="" />
+      <img class="fb-run" src="assets/svg/tiki-mascot.svg" alt="" />
     </div>
     <div class="hero-scrim"></div>
 
@@ -269,6 +268,7 @@
 
 <script src="assets/js/ascii.js"></script>
 <script src="assets/js/chili.js"></script>
+<script src="assets/js/page.js"></script>
 <script src="assets/js/landing.js"></script>
 </body>
 </html>
