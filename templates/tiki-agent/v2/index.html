@@ -291,16 +291,16 @@ body { isolation: isolate; }
    page transition — skewed red sweep
    ============================================================ */
 #wipe {
-  position: fixed; inset: -12% -30%;
+  position: fixed; inset: -16% -45%;
   z-index: 9999; pointer-events: none;
-  transform: translate3d(-125%, 0, 0) skewX(-9deg);
+  transform: translate3d(-135%, 0, 0) skewX(-11deg);
   background: linear-gradient(94deg,
     rgba(255, 47, 47, 0) 0%,
-    rgba(255, 47, 47, 0.88) 16%,
-    #ff2f2f 44%,
-    #ff6a4d 62%,
+    rgba(255, 47, 47, 0.88) 14%,
+    #ff2f2f 42%,
+    #ff6a4d 60%,
     #f3ecea 100%);
-  transition: transform 0.42s cubic-bezier(0.66, 0, 0.24, 1);
+  transition: transform 0.56s cubic-bezier(0.7, 0, 0.2, 1);
   will-change: transform;
 }
 #wipe::after {
@@ -308,8 +308,8 @@ body { isolation: isolate; }
   background: repeating-linear-gradient(90deg, rgba(0, 0, 0, 0.1) 0 2px, transparent 2px 5px);
   opacity: 0.45; mix-blend-mode: multiply;
 }
-#wipe.in { transform: translate3d(0, 0, 0) skewX(-9deg); }
-#wipe.out { transform: translate3d(125%, 0, 0) skewX(-9deg); }
+#wipe.in { transform: translate3d(0, 0, 0) skewX(-11deg); }
+#wipe.out { transform: translate3d(135%, 0, 0) skewX(-11deg); }
 #wipe.hold { transition: none; }
 
 /* ============================================================
@@ -2255,15 +2255,17 @@ body.on-console { overflow: hidden; height: 100dvh; }
   vec4 renderScene(vec2 uv, vec2 res){
     float A = (res.x / res.y) * 0.60;
     float fitH = 0.86 * 1.647 / 2.60;
-    float fitW = 0.459 * A;
+    float fitW = 0.833 * A;
     float sc = min(mix(0.532, 0.512, uStyle), min(fitH, fitW));
-    float compOff = 0.735 * sc / (1.647 * A);
-    float narrowX = 0.5 + compOff;
+    float gFac = clamp(sqrt(max(A, 0.001) / 1.72), 0.45, 1.0);
+    float trailUv = 1.47 * sc * gFac / (1.647 * A);
+    float narrowX = 0.5 + min(0.25 * trailUv, 0.02);
     float cenWide = mix(0.56, 0.70, smoothstep(0.9, 1.9, A));
     float wideX = mix(0.60, cenWide, smoothstep(0.85, 1.15, A));
     float cenX = mix(narrowX, wideX, smoothstep(0.80, 1.10, A));
-    cenX = mix(cenX, 0.5 + compOff, uStyle);
-    vec2 cen = vec2(cenX, 0.530);
+    cenX = mix(cenX, 0.5, uStyle);
+    float cenY = mix(0.530, 0.460, 1.0 - smoothstep(0.35, 0.85, A));
+    vec2 cen = vec2(cenX, cenY);
     vec2 sp = (uv - cen) * vec2(A, 1.0);
 
     vec3 ro = vec3(0.0, 0.02, 4.2);
@@ -2293,9 +2295,9 @@ body.on-console { overflow: hidden; height: 100dvh; }
 
     for (int g = 3; g >= 0; g--){
       float fg = float(g);
-      vec3 gp = pos - vec3(fg * 0.49 * sc, 0.0, 0.0);
+      vec3 gp = pos - vec3(fg * 0.49 * sc * gFac, 0.0, 0.0);
       float gsc = sc * (1.0 - fg * 0.015);
-      float gph = ph - fg * 0.49 * (1.0 + uAct);
+      float gph = ph - fg * 0.49 * (1.0 + uAct) * gFac;
       float boost = g == 0 ? 1.0 : (0.50 / (1.0 + fg * 1.15));
       float mh = 0.0;
       float hit = traceChar(ro, rd, gp, gsc, lean, gph, mh);
@@ -2320,6 +2322,7 @@ body.on-console { overflow: hidden; height: 100dvh; }
 /* shared chrome — pinch-zoom lock + page transitions */
 (() => {
   const reduce = matchMedia("(prefers-reduced-motion: reduce)").matches;
+  const T = 560; // must match #wipe transition-duration in tiki.css
 
   /* ---------------- zoom / overscroll lock ---------------- */
   const multi = (e) => {
@@ -2358,19 +2361,40 @@ body.on-console { overflow: hidden; height: 100dvh; }
     document.body.classList.add("enter");
   }
 
+  /* resolve when #wipe finishes moving — never trust a bare timeout */
+  function waitWipe() {
+    return new Promise((res) => {
+      if (reduce) return res();
+      let done = false;
+      const fin = () => {
+        if (done) return;
+        done = true;
+        wipe.removeEventListener("transitionend", fin);
+        res();
+      };
+      wipe.addEventListener("transitionend", fin);
+      setTimeout(fin, T + 120); // safety net if the event is dropped
+    });
+  }
+
+  /* full sweep in, wait until the screen is actually covered */
   function cover() {
     wipe.classList.remove("out", "hold");
     void wipe.offsetWidth;
     wipe.classList.add("in");
+    return waitWipe();
   }
 
+  /* panel sweeps away; content entrance starts underneath it */
   function reveal() {
     wipe.classList.remove("in");
+    void wipe.offsetWidth; // commit covered position so the exit animates
     wipe.classList.add("out");
     enter();
+    return waitWipe();
   }
 
-  /* arriving from another page: overflow the overlay, then sweep it away */
+  /* arriving from another page: screen starts covered, then the panel leaves */
   if (!reduce) {
     let arriving = false;
     try {
@@ -2379,19 +2403,25 @@ body.on-console { overflow: hidden; height: 100dvh; }
     } catch (_) {}
     if (arriving) {
       wipe.classList.add("hold", "in");
-      requestAnimationFrame(() => {
-        wipe.classList.remove("hold");
-        requestAnimationFrame(() => {
-          wipe.classList.remove("in");
-          wipe.classList.add("out");
-        });
-      });
+      void wipe.offsetWidth; // painted covered, zero transition
+      wipe.classList.remove("hold");
+      void wipe.offsetWidth; // commit so the next change animates
+      wipe.classList.remove("in");
+      wipe.classList.add("out");
+      enter();
     }
   }
 
-  addEventListener("pageshow", enter);
+  addEventListener("pageshow", (e) => {
+    if (e.persisted) {
+      // bfcache restore: never trust leftover wipe state
+      wipe.className = "";
+      leaving = false;
+    }
+    enter();
+  });
 
-  /* full page navigation: cover, then move */
+  /* ---------------- navigation ---------------- */
   document.addEventListener(
     "click",
     (e) => {
@@ -2400,26 +2430,47 @@ body.on-console { overflow: hidden; height: 100dvh; }
       if (!a || a.target === "_blank" || a.hasAttribute("download")) return;
 
       const raw = a.getAttribute("href");
-      if (!raw || raw.startsWith("#") || /^(https?:|mailto:|tel:|javascript:)/i.test(raw)) return;
+      if (!raw || /^(https?:|mailto:|tel:|javascript:)/i.test(raw)) return;
       if (a.host && a.host !== location.host) return;
 
-      e.preventDefault();
+      /* in-page section anchors (#engine): native jump, untouched */
+      if (raw.startsWith("#") && !raw.startsWith("#/")) return;
+
       if (leaving) return;
       leaving = true;
+
+      if (raw.startsWith("#/")) {
+        /* hash router (v2): cover, swap under the panel, then reveal */
+        e.preventDefault();
+        cover()
+          .then(() => {
+            location.hash = raw.slice(1);
+            return new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r)));
+          })
+          .then(reveal)
+          .catch(() => (leaving = false));
+        return;
+      }
+
+      /* real page link (v1): cover fully, then navigate */
+      e.preventDefault();
       try {
         sessionStorage.setItem(KEY, "1");
       } catch (_) {}
-      cover();
-      setTimeout(() => (location.href = a.href), reduce ? 0 : 330);
+      cover()
+        .then(() => {
+          location.href = a.href;
+        })
+        .catch(() => (leaving = false));
     },
     true
   );
 
-  /* in-document routing (hash views): wipe around the swap */
+  /* back/forward on hash routes: swap already happened, dress it with a sweep */
   addEventListener("hashchange", () => {
     if (leaving) return;
-    cover();
-    setTimeout(reveal, reduce ? 0 : 300);
+    if (wipe.classList.contains("in")) return;
+    cover().then(reveal);
   });
 })();
 

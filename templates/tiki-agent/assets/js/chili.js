@@ -162,15 +162,17 @@
   vec4 renderScene(vec2 uv, vec2 res){
     float A = (res.x / res.y) * 0.60;
     float fitH = 0.86 * 1.647 / 2.60;
-    float fitW = 0.459 * A;
+    float fitW = 0.833 * A;
     float sc = min(mix(0.532, 0.512, uStyle), min(fitH, fitW));
-    float compOff = 0.735 * sc / (1.647 * A);
-    float narrowX = 0.5 + compOff;
+    float gFac = clamp(sqrt(max(A, 0.001) / 1.72), 0.45, 1.0);
+    float trailUv = 1.47 * sc * gFac / (1.647 * A);
+    float narrowX = 0.5 + min(0.25 * trailUv, 0.02);
     float cenWide = mix(0.56, 0.70, smoothstep(0.9, 1.9, A));
     float wideX = mix(0.60, cenWide, smoothstep(0.85, 1.15, A));
     float cenX = mix(narrowX, wideX, smoothstep(0.80, 1.10, A));
-    cenX = mix(cenX, 0.5 + compOff, uStyle);
-    vec2 cen = vec2(cenX, 0.530);
+    cenX = mix(cenX, 0.5, uStyle);
+    float cenY = mix(0.530, 0.460, 1.0 - smoothstep(0.35, 0.85, A));
+    vec2 cen = vec2(cenX, cenY);
     vec2 sp = (uv - cen) * vec2(A, 1.0);
 
     vec3 ro = vec3(0.0, 0.02, 4.2);
@@ -200,9 +202,9 @@
 
     for (int g = 3; g >= 0; g--){
       float fg = float(g);
-      vec3 gp = pos - vec3(fg * 0.49 * sc, 0.0, 0.0);
+      vec3 gp = pos - vec3(fg * 0.49 * sc * gFac, 0.0, 0.0);
       float gsc = sc * (1.0 - fg * 0.015);
-      float gph = ph - fg * 0.49 * (1.0 + uAct);
+      float gph = ph - fg * 0.49 * (1.0 + uAct) * gFac;
       float boost = g == 0 ? 1.0 : (0.50 / (1.0 + fg * 1.15));
       float mh = 0.0;
       float hit = traceChar(ro, rd, gp, gsc, lean, gph, mh);
