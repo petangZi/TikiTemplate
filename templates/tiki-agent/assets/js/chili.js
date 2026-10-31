@@ -25,6 +25,9 @@
 
   float spineX(float ty){ return 0.38 * sin(ty * 1.70); }
   float spineZ(float ty){ return 0.22 * sin(ty * 2.20); }
+  float radAt(float ty){
+    return (0.016 + 0.340 * smoothstep(0.0, 0.42, ty)) * (1.0 - 0.42 * smoothstep(0.70, 1.0, ty));
+  }
 
   vec2 mapChar(vec3 p, float ph){
     vec2 res = vec2(1e5, 0.0);
@@ -58,6 +61,46 @@
       if (dl < res.x) res = vec2(dl, 4.0);
       float df = sdCap(p, foot, foot + vec3(0.14, -0.01, 0.0), 0.058);
       if (df < res.x) res = vec2(df, 5.0);
+    }
+
+    // arms: counter-swing against the legs, fists pumped forward
+    if (p.y > -0.40 && p.y < 0.52){
+      for (int i = 0; i < 2; i++){
+        float side = i == 0 ? -1.0 : 1.0;
+        float a = ph + 3.14159265 * float(i) + 3.14159265;
+        float sn = sin(a);
+        float cs = cos(a);
+        vec3 sh = vec3(spineX(0.74) + 0.200 * side, 0.240, spineZ(0.74) + 0.030);
+        vec3 el = sh + vec3(0.090 * sn * side, -0.170, 0.100 * max(cs, 0.0));
+        vec3 hd = el + vec3(0.120 * sn * side, -0.120 + 0.100 * max(0.0, -cs), 0.080);
+        float da = min(sdCap(p, sh, el, 0.045), sdCap(p, el, hd, 0.040));
+        if (da < res.x) res = vec2(da, 9.0);
+        float dfist = length(p - hd) - 0.062;
+        if (dfist < res.x) res = vec2(dfist, 10.0);
+      }
+    }
+
+    // face: sclera + tracking pupil + angry brow, with a slow blink
+    if (p.y > 0.05 && p.y < 0.50 && p.z > 0.02){
+      float lid = 1.0 - 0.90 * (1.0 - smoothstep(0.0, 0.045, fract(ph * 0.0222)));
+      float fty = 0.745;
+      float fdx = 0.122;
+      float frr = radAt(fty);
+      float fz = sqrt(max(frr * frr - fdx * fdx, 0.0));
+      for (int i = 0; i < 2; i++){
+        float side = i == 0 ? -1.0 : 1.0;
+        vec3 ec = vec3(spineX(fty) + fdx * side, fty * 1.75 - 1.05, fz - 0.030);
+        float dEye = sdEllip(p - ec, vec3(0.086, 0.104 * lid, 0.075));
+        if (dEye < res.x) res = vec2(dEye, 6.0);
+        vec3 pc = ec + vec3(0.010 * side, -0.008, 0.062);
+        vec3 pq = (p - pc) * vec3(1.0, 1.0 / max(lid, 0.05), 1.0);
+        float dPup = max(length(pq) - 0.042, dEye - 0.006);
+        if (dPup < res.x) res = vec2(dPup, 7.0);
+        vec3 bi = ec + vec3(-0.100 * side, 0.092, -0.006);
+        vec3 bo = ec + vec3(0.094 * side, 0.130, -0.006);
+        float dBw = sdCap(p, bi, bo, 0.028);
+        if (dBw < res.x) res = vec2(dBw, 8.0);
+      }
     }
     return res;
   }
@@ -102,12 +145,18 @@
     if (mat > 1.5 && mat < 2.5) base = vec3(0.26, 0.44, 0.22);
     else if (mat > 2.5 && mat < 3.5) base = vec3(0.34, 0.58, 0.28);
     else if (mat > 3.5 && mat < 4.5) base = vec3(0.78, 0.08, 0.05);
-    else if (mat > 4.5) base = vec3(1.00, 0.74, 0.48);
+    else if (mat > 4.5 && mat < 5.5) base = vec3(1.00, 0.74, 0.48);
+    else if (mat > 5.5 && mat < 6.5) base = vec3(1.00, 0.98, 0.96);
+    else if (mat > 6.5 && mat < 7.5) base = vec3(0.02, 0.01, 0.02);
+    else if (mat > 7.5 && mat < 8.5) base = vec3(0.30, 0.04, 0.03);
+    else if (mat > 8.5 && mat < 9.5) base = vec3(0.88, 0.09, 0.06);
+    else if (mat > 9.5) base = vec3(1.00, 0.72, 0.50);
 
     vec3 col = base * (0.30 + 0.75 * dif + fill)
              + spec * vec3(1.0, 0.80, 0.64)
              + rim * vec3(1.0, 0.26, 0.12);
     float a = clamp(0.04 + 0.95 * dif + fill + 0.80 * rim + spec * 0.85, 0.0, 1.0) * boost;
+    if (mat > 6.5 && mat < 7.5) a *= 0.38;
     return vec4(col, a);
   }
   vec4 renderScene(vec2 uv, vec2 res){

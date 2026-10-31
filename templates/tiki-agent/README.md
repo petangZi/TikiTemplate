@@ -48,13 +48,16 @@ assets/svg/og.svg          social card
 ## The chili
 
 `chili.js` is a signed distance field, not a model file. The body is a swept, ribbed
-profile along a bent spine; the stem, leaf, legs and shoes are capsules and an ellipsoid.
+profile along a bent spine; the stem, leaf, legs, arms and shoes are capsules and
+ellipsoids. The face is seated on the body surface: two sclera ellipsoids with a capped
+pupil disc and an angled brow, and the lid height is driven by a slow blink cycle.
+
 The whole character is raymarched once per screen cell, then the ASCII pass turns each
 cell's brightness into a glyph from tiki's own ramp.
 
 The run is four temporal copies of the character, offset backwards along the motion axis
 with decreasing brightness — that is the afterimage. Speed also drives the leg cycle, the
-bob, the lean and the wind streak density.
+arm swing (counter-phase to the legs), the bob, the lean and the wind streak density.
 
 Tuning knobs live in `renderScene`:
 
